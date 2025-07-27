@@ -1,6 +1,6 @@
 # Neo4j to FalkorDB migration (without APOC)
 
-Migrating graph database contents from one proertly graph solution to another is a common task.\
+Migrating graph database contents from one property graph solution to another is a common task.\
 In this example, we use stardard cypher queries to extract data from a sample graph example availble in neo4j namely "Movies",\
 allow transformation of labels and properties, and as a next step load the csv files one by one into falkor db.
 
