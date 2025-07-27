@@ -14,7 +14,7 @@ More details are available here: https://neo4j.com/docs/getting-started/appendix
 
 ## Step 3: Reviewing and updating mapping configuration file
 The configuration files migrate_config.json allows you to modify labels and properties representation in FalkorDB.
-In order to extract topology (for a dataset which is not the movies sample dataset),\
+In order to extract the ontology (for a dataset which is not the movies sample dataset),\
 you may generate a template config file using this command:
 ```bash
 python3 neo4j_to_csv_extractor.py --password <your-password> --generate-template <your-template>.json --analyze-only
