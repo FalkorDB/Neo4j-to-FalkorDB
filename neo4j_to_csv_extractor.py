@@ -422,6 +422,154 @@ REMOVE r.source, r.target, r.type;
         print(f"Generated FalkorDB load script: {script_filename}")
         return script_filename
     
+    def generate_template_config(self, output_file: str = "template_migrate_config.json") -> str:
+        """Generate a template migration config file based on Neo4j topology"""
+        print("🔍 Analyzing Neo4j database topology...")
+        
+        # Get all labels and relationship types without filtering
+        with self.driver.session(database=self.database) as session:
+            # Get all node labels
+            result = session.run("CALL db.labels()")
+            all_labels = [record["label"] for record in result]
+            
+            # Get all relationship types
+            result = session.run("CALL db.relationshipTypes()")
+            all_rel_types = [record["relationshipType"] for record in result]
+        
+        print(f"  Found {len(all_labels)} node labels: {all_labels}")
+        print(f"  Found {len(all_rel_types)} relationship types: {all_rel_types}")
+        
+        # Build template configuration
+        template_config = {
+            "label_mappings": {label: label for label in sorted(all_labels)},
+            "property_mappings": {},
+            "relationship_mappings": {rel_type: rel_type for rel_type in sorted(all_rel_types)},
+            "relationship_property_mappings": {},
+            "excluded_labels": [],
+            "excluded_relationships": [],
+            "excluded_properties": {},
+            "data_transformations": {}
+        }
+        
+        # Analyze properties for each label
+        print("\n📊 Analyzing node properties...")
+        with self.driver.session(database=self.database) as session:
+            for label in sorted(all_labels):
+                print(f"  Analyzing {label} properties...")
+                
+                # Get properties for this label
+                query = f"""
+                MATCH (n:{label})
+                WITH n LIMIT 1000
+                UNWIND keys(n) AS key
+                RETURN DISTINCT key
+                ORDER BY key
+                """
+                result = session.run(query)
+                properties = [record["key"] for record in result]
+                
+                if properties:
+                    template_config["property_mappings"][label] = {
+                        prop: prop for prop in properties
+                    }
+                    template_config["excluded_properties"][label] = []
+                    template_config["data_transformations"][label] = {}
+                    
+                    # Add example transformations for common property patterns
+                    for prop in properties:
+                        if prop.lower() in ['born', 'birth_year', 'birthdate']:
+                            template_config["data_transformations"][label][prop] = {
+                                "type": "date_format",
+                                "from_format": "yyyy",
+                                "to_format": "yyyy-mm-dd",
+                                "description": "Transform birth year to full date format"
+                            }
+                        elif prop.lower() in ['released', 'release_year', 'year']:
+                            template_config["data_transformations"][label][prop] = {
+                                "type": "date_format",
+                                "from_format": "yyyy",
+                                "to_format": "yyyy-mm-dd",
+                                "description": "Transform release year to full date format"
+                            }
+                    
+                    print(f"    Found {len(properties)} properties: {properties}")
+                else:
+                    print(f"    No properties found for {label}")
+        
+        # Analyze relationship properties
+        print("\n🔗 Analyzing relationship properties...")
+        with self.driver.session(database=self.database) as session:
+            for rel_type in sorted(all_rel_types):
+                print(f"  Analyzing {rel_type} properties...")
+                
+                # Get properties for this relationship type
+                query = f"""
+                MATCH ()-[r:{rel_type}]->()
+                WITH r LIMIT 1000
+                UNWIND keys(r) AS key
+                RETURN DISTINCT key
+                ORDER BY key
+                """
+                result = session.run(query)
+                properties = [record["key"] for record in result]
+                
+                if properties:
+                    template_config["relationship_property_mappings"][rel_type] = {
+                        prop: prop for prop in properties
+                    }
+                    print(f"    Found {len(properties)} properties: {properties}")
+                else:
+                    print(f"    No properties found for {rel_type}")
+        
+        # Add database statistics
+        print("\n📈 Gathering database statistics...")
+        with self.driver.session(database=self.database) as session:
+            # Count nodes by label
+            node_counts = {}
+            for label in all_labels:
+                result = session.run(f"MATCH (n:{label}) RETURN count(n) as count")
+                count = result.single()["count"]
+                node_counts[label] = count
+                print(f"  {label}: {count} nodes")
+            
+            # Count relationships by type
+            rel_counts = {}
+            for rel_type in all_rel_types:
+                result = session.run(f"MATCH ()-[r:{rel_type}]->() RETURN count(r) as count")
+                count = result.single()["count"]
+                rel_counts[rel_type] = count
+                print(f"  {rel_type}: {count} relationships")
+        
+        # Add metadata to the config
+        template_config["_metadata"] = {
+            "generated_from": "Neo4j topology analysis",
+            "database_stats": {
+                "node_counts": node_counts,
+                "relationship_counts": rel_counts,
+                "total_nodes": sum(node_counts.values()),
+                "total_relationships": sum(rel_counts.values())
+            },
+            "instructions": [
+                "This is a template configuration generated from your Neo4j database topology.",
+                "Customize the mappings, exclusions, and transformations as needed.",
+                "Remove the '_metadata' section before using this config for migration.",
+                "See MIGRATION_CONFIG_README.md for detailed configuration options."
+            ]
+        }
+        
+        # Save template to file
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(template_config, f, indent=2, ensure_ascii=False)
+        
+        print(f"\n✅ Generated template migration config: {output_file}")
+        print(f"📝 Total elements analyzed:")
+        print(f"   - {len(all_labels)} node labels")
+        print(f"   - {len(all_rel_types)} relationship types")
+        print(f"   - {sum(len(props) for props in template_config['property_mappings'].values())} node properties")
+        print(f"   - {sum(len(props) for props in template_config['relationship_property_mappings'].values())} relationship properties")
+        
+        return output_file
+    
     def extract_all(self, batch_size: int = 1000) -> Dict[str, List[str]]:
         """Extract all nodes and relationships"""
         print("Starting Neo4j to CSV extraction...")
@@ -439,7 +587,24 @@ REMOVE r.source, r.target, r.type;
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Extract Neo4j data to CSV for FalkorDB')
+    parser = argparse.ArgumentParser(
+        description='Extract Neo4j data to CSV for FalkorDB migration',
+        epilog='''
+Examples:
+  # Analyze topology and generate template config
+  python3 neo4j_to_csv_extractor.py --password mypass --analyze-only
+  
+  # Generate custom template config file
+  python3 neo4j_to_csv_extractor.py --password mypass --generate-template my_template.json
+  
+  # Extract data using existing config
+  python3 neo4j_to_csv_extractor.py --password mypass --config migrate_config.json
+  
+  # Extract only nodes
+  python3 neo4j_to_csv_extractor.py --password mypass --nodes-only
+''',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument('--uri', default='bolt://localhost:7687', help='Neo4j URI')
     parser.add_argument('--username', default='neo4j', help='Neo4j username')
     parser.add_argument('--password', required=True, help='Neo4j password')
@@ -448,12 +613,24 @@ def main():
     parser.add_argument('--nodes-only', action='store_true', help='Extract only nodes')
     parser.add_argument('--edges-only', action='store_true', help='Extract only relationships')
     parser.add_argument('--config', help='Path to migration configuration JSON file')
+    parser.add_argument('--generate-template', help='Generate template migration config file from Neo4j topology (specify output filename)')
+    parser.add_argument('--analyze-only', action='store_true', help='Only analyze topology and generate template config, do not extract data')
     
     args = parser.parse_args()
     
     extractor = Neo4jToCSVExtractor(args.uri, args.username, args.password, args.database, args.config)
     
     try:
+        # Handle template generation
+        if args.generate_template or args.analyze_only:
+            template_file = args.generate_template if args.generate_template else "template_migrate_config.json"
+            extractor.generate_template_config(template_file)
+            
+            if args.analyze_only:
+                print("\n📋 Analysis complete! Use the generated template to customize your migration.")
+                return
+        
+        # Handle data extraction
         if args.nodes_only:
             extractor.extract_all_nodes(args.batch_size)
         elif args.edges_only:
