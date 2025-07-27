@@ -1,0 +1,134 @@
+id,labels,birth_year,name
+1,Person,1964,Keanu Reeves
+2,Person,1967,Carrie-Anne Moss
+3,Person,1961,Laurence Fishburne
+4,Person,1960,Hugo Weaving
+5,Person,1967,Lilly Wachowski
+6,Person,1965,Lana Wachowski
+7,Person,1952,Joel Silver
+8,Person,1978,Emil Eifrem
+12,Person,1975,Charlize Theron
+13,Person,1940,Al Pacino
+14,Person,1944,Taylor Hackford
+16,Person,1962,Tom Cruise
+17,Person,1937,Jack Nicholson
+18,Person,1962,Demi Moore
+19,Person,1958,Kevin Bacon
+20,Person,1966,Kiefer Sutherland
+21,Person,1971,Noah Wyle
+22,Person,1968,Cuba Gooding Jr.
+23,Person,1957,Kevin Pollak
+24,Person,1943,J.T. Walsh
+25,Person,1967,James Marshall
+26,Person,1948,Christopher Guest
+27,Person,1947,Rob Reiner
+28,Person,1961,Aaron Sorkin
+30,Person,1957,Kelly McGillis
+31,Person,1959,Val Kilmer
+32,Person,1962,Anthony Edwards
+33,Person,1933,Tom Skerritt
+34,Person,1961,Meg Ryan
+35,Person,1944,Tony Scott
+36,Person,1941,Jim Cash
+38,Person,1969,Renee Zellweger
+39,Person,1962,Kelly Preston
+40,Person,1974,Jerry O'Connell
+41,Person,1970,Jay Mohr
+42,Person,1961,Bonnie Hunt
+43,Person,1971,Regina King
+44,Person,1996,Jonathan Lipnicki
+45,Person,1957,Cameron Crowe
+47,Person,1970,River Phoenix
+48,Person,1971,Corey Feldman
+49,Person,1972,Wil Wheaton
+50,Person,1966,John Cusack
+51,Person,1942,Marshall Bell
+53,Person,1963,Helen Hunt
+54,Person,1963,Greg Kinnear
+55,Person,1940,James L. Brooks
+57,Person,1960,Annabella Sciorra
+58,Person,1929,Max von Sydow
+59,Person,1942,Werner Herzog
+60,Person,1951,Robin Williams
+61,Person,1956,Vincent Ward
+63,Person,1970,Ethan Hawke
+64,Person,1971,Rick Yune
+65,Person,1940,James Cromwell
+66,Person,1953,Scott Hicks
+68,Person,1956,Tom Hanks
+69,Person,1968,Parker Posey
+70,Person,1973,Dave Chappelle
+71,Person,1967,Steve Zahn
+72,Person,1941,Nora Ephron
+74,Person,1956,Rita Wilson
+75,Person,1953,Bill Pullman
+76,Person,1949,Victor Garber
+77,Person,1962,Rosie O'Donnell
+79,Person,1950,John Patrick Stanley
+80,Person,1956,Nathan Lane
+82,Person,1948,Billy Crystal
+83,Person,1956,Carrie Fisher
+84,Person,1949,Bruno Kirby
+86,Person,1977,Liv Tyler
+88,Person,1970,Brooke Langton
+89,Person,1930,Gene Hackman
+90,Person,1968,Orlando Jones
+91,Person,1950,Howard Deutch
+93,Person,1974,Christian Bale
+94,Person,1954,Zach Grenier
+96,Person,1931,Mike Nichols
+98,Person,1930,Richard Harris
+99,Person,1930,Clint Eastwood
+101,Person,1947,Takeshi Kitano
+102,Person,1968,Dina Meyer
+103,Person,1958,Ice-T
+104,Person,1953,Robert Longo
+106,Person,1966,Halle Berry
+107,Person,1949,Jim Broadbent
+108,Person,1965,Tom Tykwer
+109,Person,1969,David Mitchell
+110,Person,1961,Stefan Arndt
+112,Person,1939,Ian McKellen
+113,Person,1976,Audrey Tautou
+114,Person,1971,Paul Bettany
+115,Person,1954,Ron Howard
+117,Person,1981,Natalie Portman
+118,Person,1946,Stephen Rea
+119,Person,1940,John Hurt
+120,Person,1967,Ben Miles
+122,Person,1985,Emile Hirsch
+123,Person,1960,John Goodman
+124,Person,1946,Susan Sarandon
+125,Person,1966,Matthew Fox
+126,Person,1980,Christina Ricci
+127,Person,1982,Rain
+129,Person,,Naomie Harris
+131,Person,1957,Michael Clarke Duncan
+132,Person,1953,David Morse
+133,Person,1968,Sam Rockwell
+134,Person,1955,Gary Sinise
+135,Person,1959,Patricia Clarkson
+136,Person,1959,Frank Darabont
+138,Person,1938,Frank Langella
+139,Person,1969,Michael Sheen
+140,Person,1960,Oliver Platt
+142,Person,1944,Danny DeVito
+143,Person,1965,John C. Reilly
+145,Person,1950,Ed Harris
+146,Person,1955,Bill Paxton
+148,Person,1967,Philip Seymour Hoffman
+149,Person,1943,Jan de Bont
+151,Person,1951,Robert Zemeckis
+153,Person,1932,Milos Forman
+155,Person,1946,Diane Keaton
+156,Person,1949,Nancy Meyers
+158,Person,1958,Chris Columbus
+160,Person,1967,Julia Roberts
+163,Person,1954,Madonna
+164,Person,1956,Geena Davis
+165,Person,1963,Lori Petty
+166,Person,1943,Penny Marshall
+167,Person,,Paul Blythe
+168,Person,,Angela Scope
+169,Person,,Jessica Thompson
+170,Person,,James Thompson

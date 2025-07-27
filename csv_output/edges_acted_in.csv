@@ -1,0 +1,173 @@
+source,target,type,roles
+1,0,ACTED_IN,Neo
+2,0,ACTED_IN,Trinity
+3,0,ACTED_IN,Morpheus
+4,0,ACTED_IN,Agent Smith
+8,0,ACTED_IN,Emil
+1,9,ACTED_IN,Neo
+2,9,ACTED_IN,Trinity
+3,9,ACTED_IN,Morpheus
+4,9,ACTED_IN,Agent Smith
+1,10,ACTED_IN,Neo
+2,10,ACTED_IN,Trinity
+3,10,ACTED_IN,Morpheus
+4,10,ACTED_IN,Agent Smith
+1,11,ACTED_IN,Kevin Lomax
+12,11,ACTED_IN,Mary Ann Lomax
+13,11,ACTED_IN,John Milton
+16,15,ACTED_IN,Lt. Daniel Kaffee
+17,15,ACTED_IN,Col. Nathan R. Jessup
+18,15,ACTED_IN,Lt. Cdr. JoAnne Galloway
+19,15,ACTED_IN,Capt. Jack Ross
+20,15,ACTED_IN,Lt. Jonathan Kendrick
+21,15,ACTED_IN,Cpl. Jeffrey Barnes
+22,15,ACTED_IN,Cpl. Carl Hammaker
+23,15,ACTED_IN,Lt. Sam Weinberg
+24,15,ACTED_IN,Lt. Col. Matthew Andrew Markinson
+25,15,ACTED_IN,Pfc. Louden Downey
+26,15,ACTED_IN,Dr. Stone
+28,15,ACTED_IN,Man in Bar
+16,29,ACTED_IN,Maverick
+30,29,ACTED_IN,Charlie
+31,29,ACTED_IN,Iceman
+32,29,ACTED_IN,Goose
+33,29,ACTED_IN,Viper
+34,29,ACTED_IN,Carole
+16,37,ACTED_IN,Jerry Maguire
+22,37,ACTED_IN,Rod Tidwell
+38,37,ACTED_IN,Dorothy Boyd
+39,37,ACTED_IN,Avery Bishop
+40,37,ACTED_IN,Frank Cushman
+41,37,ACTED_IN,Bob Sugar
+42,37,ACTED_IN,Laurel Boyd
+43,37,ACTED_IN,Marcee Tidwell
+44,37,ACTED_IN,Ray Boyd
+49,46,ACTED_IN,Gordie Lachance
+47,46,ACTED_IN,Chris Chambers
+40,46,ACTED_IN,Vern Tessio
+48,46,ACTED_IN,Teddy Duchamp
+50,46,ACTED_IN,Denny Lachance
+20,46,ACTED_IN,Ace Merrill
+51,46,ACTED_IN,Mr. Lachance
+17,52,ACTED_IN,Melvin Udall
+53,52,ACTED_IN,Carol Connelly
+54,52,ACTED_IN,Simon Bishop
+22,52,ACTED_IN,Frank Sachs
+60,56,ACTED_IN,Chris Nielsen
+22,56,ACTED_IN,Albert Lewis
+57,56,ACTED_IN,Annie Collins-Nielsen
+58,56,ACTED_IN,The Tracker
+59,56,ACTED_IN,The Face
+63,62,ACTED_IN,Ishmael Chambers
+64,62,ACTED_IN,Kazuo Miyamoto
+58,62,ACTED_IN,Nels Gudmundsson
+65,62,ACTED_IN,Judge Fielding
+68,67,ACTED_IN,Joe Fox
+34,67,ACTED_IN,Kathleen Kelly
+54,67,ACTED_IN,Frank Navasky
+69,67,ACTED_IN,Patricia Eden
+70,67,ACTED_IN,Kevin Jackson
+71,67,ACTED_IN,George Pappas
+68,73,ACTED_IN,Sam Baldwin
+34,73,ACTED_IN,Annie Reed
+74,73,ACTED_IN,Suzy
+75,73,ACTED_IN,Walter
+76,73,ACTED_IN,Greg
+77,73,ACTED_IN,Becky
+68,78,ACTED_IN,Joe Banks
+34,78,ACTED_IN,DeDe;Angelica Graynamore;Patricia Graynamore
+80,78,ACTED_IN,Baw
+82,81,ACTED_IN,Harry Burns
+34,81,ACTED_IN,Sally Albright
+83,81,ACTED_IN,Marie
+84,81,ACTED_IN,Jess
+68,85,ACTED_IN,Mr. White
+86,85,ACTED_IN,Faye Dolan
+12,85,ACTED_IN,Tina
+1,87,ACTED_IN,Shane Falco
+88,87,ACTED_IN,Annabelle Farrell
+89,87,ACTED_IN,Jimmy McGinty
+90,87,ACTED_IN,Clifford Franklin
+51,92,ACTED_IN,Admiral
+93,92,ACTED_IN,Dieter Dengler
+94,92,ACTED_IN,Squad Leader
+71,92,ACTED_IN,Duane
+60,95,ACTED_IN,Armand Goldman
+80,95,ACTED_IN,Albert Goldman
+89,95,ACTED_IN,Sen. Kevin Keeley
+98,97,ACTED_IN,English Bob
+99,97,ACTED_IN,Bill Munny
+89,97,ACTED_IN,Little Bill Daggett
+1,100,ACTED_IN,Johnny Mnemonic
+101,100,ACTED_IN,Takahashi
+102,100,ACTED_IN,Jane
+103,100,ACTED_IN,J-Bone
+68,105,ACTED_IN,Zachry;Dr. Henry Goose;Isaac Sachs;Dermot Hoggins
+4,105,ACTED_IN,Bill Smoke;Haskell Moore;Tadeusz Kesselring;Nurse Noakes;Boardman Mephi;Old Georgie
+106,105,ACTED_IN,Luisa Rey;Jocasta Ayrs;Ovid;Meronym
+107,105,ACTED_IN,Vyvyan Ayrs;Captain Molyneux;Timothy Cavendish
+68,111,ACTED_IN,Dr. Robert Langdon
+112,111,ACTED_IN,Sir Leight Teabing
+113,111,ACTED_IN,Sophie Neveu
+114,111,ACTED_IN,Silas
+4,116,ACTED_IN,V
+117,116,ACTED_IN,Evey Hammond
+118,116,ACTED_IN,Eric Finch
+119,116,ACTED_IN,High Chancellor Adam Sutler
+120,116,ACTED_IN,Dascomb
+122,121,ACTED_IN,Speed Racer
+123,121,ACTED_IN,Pops
+124,121,ACTED_IN,Mom
+125,121,ACTED_IN,Racer X
+126,121,ACTED_IN,Trixie
+127,121,ACTED_IN,Taejo Togokahn
+120,121,ACTED_IN,Cass Jones
+127,128,ACTED_IN,Raizo
+129,128,ACTED_IN,Mika Coretti
+64,128,ACTED_IN,Takeshi
+120,128,ACTED_IN,Ryan Maslow
+68,130,ACTED_IN,Paul Edgecomb
+131,130,ACTED_IN,John Coffey
+132,130,ACTED_IN,"Brutus ""Brutal"" Howell"
+42,130,ACTED_IN,Jan Edgecomb
+65,130,ACTED_IN,Warden Hal Moores
+133,130,ACTED_IN,"""Wild Bill"" Wharton"
+134,130,ACTED_IN,Burt Hammersmith
+135,130,ACTED_IN,Melinda Moores
+138,137,ACTED_IN,Richard Nixon
+139,137,ACTED_IN,David Frost
+19,137,ACTED_IN,Jack Brennan
+140,137,ACTED_IN,Bob Zelnick
+133,137,ACTED_IN,"James Reston, Jr."
+17,141,ACTED_IN,Hoffa
+142,141,ACTED_IN,"Robert ""Bobby"" Ciaro"
+24,141,ACTED_IN,Frank Fitzsimmons
+143,141,ACTED_IN,"Peter ""Pete"" Connelly"
+68,144,ACTED_IN,Jim Lovell
+19,144,ACTED_IN,Jack Swigert
+145,144,ACTED_IN,Gene Kranz
+146,144,ACTED_IN,Fred Haise
+134,144,ACTED_IN,Ken Mattingly
+146,147,ACTED_IN,Bill Harding
+53,147,ACTED_IN,Dr. Jo Harding
+94,147,ACTED_IN,Eddie
+148,147,ACTED_IN,"Dustin ""Dusty"" Davis"
+68,150,ACTED_IN,Chuck Noland
+53,150,ACTED_IN,Kelly Frears
+17,152,ACTED_IN,Randle McMurphy
+142,152,ACTED_IN,Martini
+17,154,ACTED_IN,Harry Sanborn
+155,154,ACTED_IN,Erica Barry
+1,154,ACTED_IN,Julian Mercer
+60,157,ACTED_IN,Andrew Marin
+140,157,ACTED_IN,Rupert Burns
+68,159,ACTED_IN,Rep. Charlie Wilson
+160,159,ACTED_IN,Joanne Herring
+148,159,ACTED_IN,Gust Avrakotos
+68,161,ACTED_IN,Hero Boy;Father;Conductor;Hobo;Scrooge;Santa Claus
+68,162,ACTED_IN,Jimmy Dugan
+164,162,ACTED_IN,Dottie Hinson
+165,162,ACTED_IN,Kit Keller
+77,162,ACTED_IN,Doris Murphy
+163,162,ACTED_IN,"""All the Way"" Mae Mordabito"
+146,162,ACTED_IN,Bob Hinson
