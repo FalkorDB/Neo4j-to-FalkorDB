@@ -13,7 +13,7 @@ You can load the movies dataset by following the ":guide movies" command in the 
 More details are available here: https://neo4j.com/docs/getting-started/appendix/example-data/
 
 ## Step 3: Reviewing and updating mapping configuration file
-The configuration files migrate_config.json allows you to modify labels and properties representation in FalkorDB.
+The configuration file migrate_config.json allows you to modify how the labels and properties are represented in FalkorDB.
 In order to extract the ontology (for a dataset which is not the movies sample dataset),\
 you may generate a template config file using this command:
 ```bash
