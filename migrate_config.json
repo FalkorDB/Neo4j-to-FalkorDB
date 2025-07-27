@@ -1,0 +1,53 @@
+{
+  "label_mappings": {
+    "Person": "Person",
+    "Movie": "Movie"
+  },
+  "property_mappings": {
+    "Person": {
+      "name": "name",
+      "born": "birth_year"
+    },
+    "Movie": {
+      "title": "name",
+      "released": "release_year"
+    }
+  },
+  "relationship_mappings": {
+    "ACTED_IN": "ACTED_IN",
+    "DIRECTED": "DIRECTED"
+  },
+  "relationship_property_mappings": {
+    "ACTED_IN": {
+      "roles": "roles"
+    },
+    "REVIEWED": {
+      "rating": "rating",
+      "summary": "summary"
+    }
+  },
+  "excluded_labels": [
+    "TempNode"
+  ],
+  "excluded_relationships": [
+    "TEMP_REL"
+  ],
+  "excluded_properties": {
+    "Person": ["internal_id", "temp_field"],
+    "Movie": ["debug_info"]
+  },
+  "data_transformations": {
+    "Person": {
+      "born": {
+        "type": "date_format",
+        "from_format": "yyyy",
+        "to_format": "yyyy"
+      }
+    },
+    "Movie": {
+      "released": {
+        "type": "integer_to_string"
+      }
+    }
+  }
+}
