@@ -25,7 +25,7 @@ To extract data from neo4j you can activate the relevant python script:
 ```bash
 python3 neo4j_to_csv_extractor.py --password <your-password> --config migrate_config.json
 ```
-The script would read data from neo4j and create in csv_output subfolder all nodes and edges csv files\ 
+The script would read data from neo4j and create in csv_output subfolder all nodes and edges csv files
 with headers and content adapted based on guidelines in the migrate_config.json file
 
 --------
