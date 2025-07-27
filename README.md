@@ -20,6 +20,56 @@ you may generate a template config file using this command:
 python3 neo4j_to_csv_extractor.py --password <your-password> --generate-template <your-template>.json --analyze-only
 ```
 
+Sample output of the ontology extraction phase is shown below as executed against the movies dataset
+--------
+```bash
+Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...\
+✅ Loaded configuration from migrate_config.json\
+✅ Successfully connected to Neo4j!\
+🔍 Analyzing Neo4j database topology...\
+  Found 2 node labels: ['Movie', 'Person']\
+  Found 6 relationship types: ['ACTED_IN', 'DIRECTED', 'PRODUCED', 'WROTE', 'FOLLOWS', 'REVIEWED']\
+
+📊 Analyzing node properties...\
+  Analyzing Movie properties...\
+    Found 3 properties: ['released', 'tagline', 'title']\
+  Analyzing Person properties...\
+    Found 2 properties: ['born', 'name']\
+
+🔗 Analyzing relationship properties...\
+  Analyzing ACTED_IN properties...\
+    Found 1 properties: ['roles']\
+  Analyzing DIRECTED properties...\
+    No properties found for DIRECTED\
+  Analyzing FOLLOWS properties...\
+    No properties found for FOLLOWS\
+  Analyzing PRODUCED properties...\
+    No properties found for PRODUCED\
+  Analyzing REVIEWED properties...\
+    Found 2 properties: ['rating', 'summary']\
+  Analyzing WROTE properties...\
+    No properties found for WROTE\
+
+📈 Gathering database statistics...\
+  Movie: 38 nodes\
+  Person: 133 nodes\
+  ACTED_IN: 172 relationships\
+  DIRECTED: 44 relationships\
+  PRODUCED: 15 relationships\
+  WROTE: 10 relationships\
+  FOLLOWS: 3 relationships\
+  REVIEWED: 9 relationships\
+
+✅ Generated template migration config: shahar_template.json\
+📝 Total elements analyzed:\
+   - 2 node labels\
+   - 6 relationship types\
+   - 5 node properties\
+   - 3 relationship properties\
+
+📋 Analysis complete! Use the generated template to customize your migration.\
+```
+--------
 ## Step 4: Extracting data from neo4j and generating csv files
 To extract data from neo4j you can activate the relevant python script:
 ```bash
@@ -31,6 +81,7 @@ with headers and content adapted based on guidelines in the migrate_config.json 
 --------
 Execution output example
 --------
+```bash
 Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...\
 ✅ Loaded configuration from migrate_config.json\
 ✅ Successfully connected to Neo4j!\
@@ -233,6 +284,7 @@ Extraction complete!\
 Node files: 2\
 Edge files: 6\
 Load script: csv_output/load_to_falkordb.cypher\
+```
 --------
 
 
@@ -247,6 +299,7 @@ python3 falkordb_csv_loader_fixed.py MOVIES --port 6379 --stats
 ---------
 Execution output example
 ---------
+```bash
 Connecting to FalkorDB at localhost:6379...\
 ✅ Connected to FalkorDB graph 'MOVIES'\
 Found 2 node files and 6 edge files\
@@ -316,7 +369,7 @@ Relationships:\
   WROTE: 10\
   ACTED_IN: 172\
   FOLLOWS: 3\
-
+```
 ---------
 
 ## Step 6: Validating content of data in FalkorDB
