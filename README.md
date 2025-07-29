@@ -189,7 +189,7 @@ Extracting nodes with label: Person
   🔄 Transformed Person.born: '1968' -> '1968'
   🔄 Transformed Person.born: '1973' -> '1973'
   🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1941' -> '1941
+  🔄 Transformed Person.born: '1941' -> '1941'
   🔄 Transformed Person.born: '1956' -> '1956'
   🔄 Transformed Person.born: '1953' -> '1953'
   🔄 Transformed Person.born: '1949' -> '1949'
