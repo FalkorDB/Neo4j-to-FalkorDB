@@ -82,6 +82,7 @@ with headers and content adapted based on guidelines in the migrate_config.json 
 Execution output example
 --------
 ```bash
+
 Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...
 ✅ Loaded configuration from migrate_config.json
 ✅ Successfully connected to Neo4j!
@@ -129,134 +130,6 @@ Extracting nodes with label: Movie
   Processed 38 nodes...
   Exported 38 nodes to csv_output/nodes_movie.csv
 Extracting nodes with label: Person
-  🔄 Transformed Person.born: '1964' -> '1964'
-  🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1961' -> '1961'
-  🔄 Transformed Person.born: '1960' -> '1960'
-  🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1965' -> '1965'
-  🔄 Transformed Person.born: '1952' -> '1952'
-  🔄 Transformed Person.born: '1978' -> '1978'
-  🔄 Transformed Person.born: '1975' -> '1975'
-  🔄 Transformed Person.born: '1940' -> '1940'
-  🔄 Transformed Person.born: '1944' -> '1944'
-  🔄 Transformed Person.born: '1962' -> '1962'
-  🔄 Transformed Person.born: '1937' -> '1937'
-  🔄 Transformed Person.born: '1962' -> '1962'
-  🔄 Transformed Person.born: '1958' -> '1958'
-  🔄 Transformed Person.born: '1966' -> '1966'
-  🔄 Transformed Person.born: '1971' -> '1971'
-  🔄 Transformed Person.born: '1968' -> '1968'
-  🔄 Transformed Person.born: '1957' -> '1957'
-  🔄 Transformed Person.born: '1943' -> '1943'
-  🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1948' -> '1948'
-  🔄 Transformed Person.born: '1947' -> '1947'
-  🔄 Transformed Person.born: '1961' -> '1961'
-  🔄 Transformed Person.born: '1957' -> '1957'
-  🔄 Transformed Person.born: '1959' -> '1959'
-  🔄 Transformed Person.born: '1962' -> '1962'
-  🔄 Transformed Person.born: '1933' -> '1933'
-  🔄 Transformed Person.born: '1961' -> '1961'
-  🔄 Transformed Person.born: '1944' -> '1944'
-  🔄 Transformed Person.born: '1941' -> '1941'
-  🔄 Transformed Person.born: '1969' -> '1969'
-  🔄 Transformed Person.born: '1962' -> '1962'
-  🔄 Transformed Person.born: '1974' -> '1974'
-  🔄 Transformed Person.born: '1970' -> '1970'
-  🔄 Transformed Person.born: '1961' -> '1961'
-  🔄 Transformed Person.born: '1971' -> '1971'
-  🔄 Transformed Person.born: '1996' -> '1996'
-  🔄 Transformed Person.born: '1957' -> '1957'
-  🔄 Transformed Person.born: '1970' -> '1970'
-  🔄 Transformed Person.born: '1971' -> '1971'
-  🔄 Transformed Person.born: '1972' -> '1972'
-  🔄 Transformed Person.born: '1966' -> '1966'
-  🔄 Transformed Person.born: '1942' -> '1942'
-  🔄 Transformed Person.born: '1963' -> '1963'
-  🔄 Transformed Person.born: '1963' -> '1963'
-  🔄 Transformed Person.born: '1940' -> '1940'
-  🔄 Transformed Person.born: '1960' -> '1960'
-  🔄 Transformed Person.born: '1929' -> '1929'
-  🔄 Transformed Person.born: '1942' -> '1942'
-  🔄 Transformed Person.born: '1951' -> '1951'
-  🔄 Transformed Person.born: '1956' -> '1956'
-  🔄 Transformed Person.born: '1970' -> '1970'
-  🔄 Transformed Person.born: '1971' -> '1971'
-  🔄 Transformed Person.born: '1940' -> '1940'
-  🔄 Transformed Person.born: '1953' -> '1953'
-  🔄 Transformed Person.born: '1956' -> '1956'
-  🔄 Transformed Person.born: '1968' -> '1968'
-  🔄 Transformed Person.born: '1973' -> '1973'
-  🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1941' -> '1941'
-  🔄 Transformed Person.born: '1956' -> '1956'
-  🔄 Transformed Person.born: '1953' -> '1953'
-  🔄 Transformed Person.born: '1949' -> '1949'
-  🔄 Transformed Person.born: '1962' -> '1962'
-  🔄 Transformed Person.born: '1950' -> '1950'
-  🔄 Transformed Person.born: '1956' -> '1956'
-  🔄 Transformed Person.born: '1948' -> '1948'
-  🔄 Transformed Person.born: '1956' -> '1956'
-  🔄 Transformed Person.born: '1949' -> '1949'
-  🔄 Transformed Person.born: '1977' -> '1977'
-  🔄 Transformed Person.born: '1970' -> '1970'
-  🔄 Transformed Person.born: '1930' -> '1930'
-  🔄 Transformed Person.born: '1968' -> '1968'
-  🔄 Transformed Person.born: '1950' -> '1950'
-  🔄 Transformed Person.born: '1974' -> '1974'
-  🔄 Transformed Person.born: '1954' -> '1954'
-  🔄 Transformed Person.born: '1931' -> '1931'
-  🔄 Transformed Person.born: '1930' -> '1930'
-  🔄 Transformed Person.born: '1930' -> '1930'
-  🔄 Transformed Person.born: '1947' -> '1947'
-  🔄 Transformed Person.born: '1968' -> '1968'
-  🔄 Transformed Person.born: '1958' -> '1958'
-  🔄 Transformed Person.born: '1953' -> '1953'
-  🔄 Transformed Person.born: '1966' -> '1966'
-  🔄 Transformed Person.born: '1949' -> '1949'
-  🔄 Transformed Person.born: '1965' -> '1965'
-  🔄 Transformed Person.born: '1969' -> '1969'
-  🔄 Transformed Person.born: '1961' -> '1961'
-  🔄 Transformed Person.born: '1939' -> '1939'
-  🔄 Transformed Person.born: '1976' -> '1976'
-  🔄 Transformed Person.born: '1971' -> '1971'
-  🔄 Transformed Person.born: '1954' -> '1954'
-  🔄 Transformed Person.born: '1981' -> '1981'
-  🔄 Transformed Person.born: '1946' -> '1946'
-  🔄 Transformed Person.born: '1940' -> '1940'
-  🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1985' -> '1985'
-  🔄 Transformed Person.born: '1960' -> '1960'
-  🔄 Transformed Person.born: '1946' -> '1946'
-  🔄 Transformed Person.born: '1966' -> '1966'
-  🔄 Transformed Person.born: '1980' -> '1980'
-  🔄 Transformed Person.born: '1982' -> '1982'
-  🔄 Transformed Person.born: '1957' -> '1957'
-  🔄 Transformed Person.born: '1953' -> '1953'
-  🔄 Transformed Person.born: '1968' -> '1968'
-  🔄 Transformed Person.born: '1955' -> '1955'
-  🔄 Transformed Person.born: '1959' -> '1959'
-  🔄 Transformed Person.born: '1959' -> '1959'
-  🔄 Transformed Person.born: '1938' -> '1938'
-  🔄 Transformed Person.born: '1969' -> '1969'
-  🔄 Transformed Person.born: '1960' -> '1960'
-  🔄 Transformed Person.born: '1944' -> '1944'
-  🔄 Transformed Person.born: '1965' -> '1965'
-  🔄 Transformed Person.born: '1950' -> '1950'
-  🔄 Transformed Person.born: '1955' -> '1955'
-  🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1943' -> '1943'
-  🔄 Transformed Person.born: '1951' -> '1951'
-  🔄 Transformed Person.born: '1932' -> '1932'
-  🔄 Transformed Person.born: '1946' -> '1946'
-  🔄 Transformed Person.born: '1949' -> '1949'
-  🔄 Transformed Person.born: '1958' -> '1958'
-  🔄 Transformed Person.born: '1967' -> '1967'
-  🔄 Transformed Person.born: '1954' -> '1954'
-  🔄 Transformed Person.born: '1956' -> '1956'
-  🔄 Transformed Person.born: '1963' -> '1963'
-  🔄 Transformed Person.born: '1943' -> '1943'
   Processed 133 nodes...
   Exported 133 nodes to csv_output/nodes_person.csv
 Found 6 relationship types: ['ACTED_IN', 'DIRECTED', 'PRODUCED', 'WROTE', 'FOLLOWS', 'REVIEWED']
@@ -278,12 +151,21 @@ Extracting relationships of type: FOLLOWS
 Extracting relationships of type: REVIEWED
   Processed 9 relationships...
   Exported 9 relationships to csv_output/edges_reviewed.csv
+Extracting database indexes...
+  Exported 4 indexes to csv_output/indexes.csv
+Extracting database constraints...
+  Exported 2 constraints to csv_output/constraints.csv
 Generated FalkorDB load script: csv_output/load_to_falkordb.cypher
+Generated FalkorDB index creation script: csv_output/create_indexes_falkordb.cypher
 
 Extraction complete!
 Node files: 2
 Edge files: 6
-Load script: csv_output/load_to_falkordb.cypher
+Index file: csv_output/indexes.csv
+Constraint file: csv_output/constraints.csv
+Data load script: csv_output/load_to_falkordb.cypher
+Index creation script: csv_output/create_indexes_falkordb.cypher
+
 ```
 --------
 
@@ -320,9 +202,28 @@ options:
 Execution output example
 ---------
 ```bash
+
 Connecting to FalkorDB at localhost:6379...
 ✅ Connected to FalkorDB graph 'MOVIES'
 Found 2 node files and 6 edge files
+
+🗂️ Setting up database schema...
+🔧 Creating indexes...
+  Read 4 rows from csv_output/indexes.csv
+  Creating: CREATE INDEX ON :Movie(title)
+  Creating: CREATE INDEX ON :Person(name)
+✅ Created 2 indexes, skipped 2
+🔒 Creating constraints...
+  Read 2 rows from csv_output/constraints.csv
+  Trying: CREATE CONSTRAINT FOR (n:Movie) REQUIRE n.title IS UNIQUE
+  Trying: CREATE CONSTRAINT ON (n:Movie) ASSERT n.title IS UNIQUE
+  ⚠️ FalkorDB may not support unique constraints yet. Skipping Movie.title
+    Tried multiple approaches: errMsg: Invalid input 'F': expected '=' or CREATE CONSTRAINT ON line: 1, column: 19, offset: 18 errC...
+  Trying: CREATE CONSTRAINT FOR (n:Person) REQUIRE n.name IS UNIQUE
+  Trying: CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE
+  ⚠️ FalkorDB may not support unique constraints yet. Skipping Person.name
+    Tried multiple approaches: errMsg: Invalid input 'F': expected '=' or CREATE CONSTRAINT ON line: 1, column: 19, offset: 18 errC...
+⚠️ Skipped 2 constraints (not supported in current FalkorDB version)
 
 📥 Loading nodes...
 Loading nodes from csv_output/nodes_movie.csv...
@@ -345,7 +246,6 @@ Loading nodes from csv_output/nodes_person.csv...
     Generated query: CREATE (:Person {id: 2, birth_year: 1967, name: 'Carrie-Anne Moss'})
     Record 3: properties = {'birth_year': 1961, 'name': 'Laurence Fishburne'}
     Generated query: CREATE (:Person {id: 3, birth_year: 1961, name: 'Laurence Fishburne'})
-  Loaded 100/133 nodes...
   Loaded 133/133 nodes...
 ✅ Loaded 133 Person nodes
 
@@ -360,7 +260,6 @@ Loading edges from csv_output/edges_follows.csv...
 ✅ Loaded 3 FOLLOWS relationships
 Loading edges from csv_output/edges_acted_in.csv...
   Read 172 rows from csv_output/edges_acted_in.csv
-  Loaded 100/172 edges...
   Loaded 172/172 edges...
 ✅ Loaded 172 ACTED_IN relationships
 Loading edges from csv_output/edges_reviewed.csv...
@@ -376,7 +275,7 @@ Loading edges from csv_output/edges_directed.csv...
   Loaded 44/44 edges...
 ✅ Loaded 44 DIRECTED relationships
 
-✅ Successfully loaded data into graph 'MOVIES'
+✅ Successfully loaded data into graph 'MOV4'
 
 📊 Graph Statistics:
 Nodes:
@@ -389,6 +288,12 @@ Relationships:
   WROTE: 10
   ACTED_IN: 172
   FOLLOWS: 3
+
+🔍 Sample Person nodes with their attributes:
+  Node 1: (:Person{birth_year:1964,id:1,name:"Keanu Reeves"})
+  Node 2: (:Person{birth_year:1967,id:2,name:"Carrie-Anne Moss"})
+  Node 3: (:Person{birth_year:1961,id:3,name:"Laurence Fishburne"})
+
 ```
 ---------
 
