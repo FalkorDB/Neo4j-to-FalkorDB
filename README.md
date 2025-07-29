@@ -296,6 +296,26 @@ After setup you will have falkordb data conntection at port 6379 and web browser
 ```bash
 python3 falkordb_csv_loader_fixed.py MOVIES --port 6379 --stats
 ```
+Note: In case your FalkorDB connection is secured with username and password you can add them according to the syntax described below. You may also control the batch size used per loaded CSV file.
+```bash
+usage: falkordb_csv_loader_fixed.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--batch-size BATCH_SIZE] [--stats] graph_name
+
+Load CSV files into FalkorDB\
+
+positional arguments:\
+  graph_name            Target graph name in FalkorDB\
+
+options:\
+  -h, --help            show this help message and exit\
+  --host HOST           FalkorDB host\
+  --port PORT           FalkorDB port\
+  --username USERNAME   FalkorDB username (optional)\
+  --password PASSWORD   FalkorDB password (optional)\
+  --batch-size BATCH_SIZE\
+                        Batch size for loading\
+  --stats               Show graph statistics after loading\
+```
+
 ---------
 Execution output example
 ---------
