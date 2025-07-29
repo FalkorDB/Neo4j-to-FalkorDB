@@ -23,51 +23,51 @@ python3 neo4j_to_csv_extractor.py --password <your-neo4j-password> --generate-te
 Sample output of the ontology extraction phase is shown below as executed against the movies dataset
 --------
 ```bash
-Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...\
-✅ Loaded configuration from migrate_config.json\
-✅ Successfully connected to Neo4j!\
-🔍 Analyzing Neo4j database topology...\
-  Found 2 node labels: ['Movie', 'Person']\
-  Found 6 relationship types: ['ACTED_IN', 'DIRECTED', 'PRODUCED', 'WROTE', 'FOLLOWS', 'REVIEWED']\
+Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...
+✅ Loaded configuration from migrate_config.json
+✅ Successfully connected to Neo4j!
+🔍 Analyzing Neo4j database topology...
+  Found 2 node labels: ['Movie', 'Person']
+  Found 6 relationship types: ['ACTED_IN', 'DIRECTED', 'PRODUCED', 'WROTE', 'FOLLOWS', 'REVIEWED']
 
-📊 Analyzing node properties...\
-  Analyzing Movie properties...\
-    Found 3 properties: ['released', 'tagline', 'title']\
-  Analyzing Person properties...\
-    Found 2 properties: ['born', 'name']\
+📊 Analyzing node properties...
+  Analyzing Movie properties...
+    Found 3 properties: ['released', 'tagline', 'title']
+  Analyzing Person properties...
+    Found 2 properties: ['born', 'name']
 
-🔗 Analyzing relationship properties...\
-  Analyzing ACTED_IN properties...\
-    Found 1 properties: ['roles']\
-  Analyzing DIRECTED properties...\
-    No properties found for DIRECTED\
-  Analyzing FOLLOWS properties...\
-    No properties found for FOLLOWS\
-  Analyzing PRODUCED properties...\
-    No properties found for PRODUCED\
-  Analyzing REVIEWED properties...\
-    Found 2 properties: ['rating', 'summary']\
-  Analyzing WROTE properties...\
-    No properties found for WROTE\
+🔗 Analyzing relationship properties...
+  Analyzing ACTED_IN properties...
+    Found 1 properties: ['roles']
+  Analyzing DIRECTED properties...
+    No properties found for DIRECTED
+  Analyzing FOLLOWS properties...
+    No properties found for FOLLOWS
+  Analyzing PRODUCED properties...
+    No properties found for PRODUCED
+  Analyzing REVIEWED properties...
+    Found 2 properties: ['rating', 'summary']
+  Analyzing WROTE properties...
+    No properties found for WROTE
 
-📈 Gathering database statistics...\
-  Movie: 38 nodes\
-  Person: 133 nodes\
-  ACTED_IN: 172 relationships\
-  DIRECTED: 44 relationships\
-  PRODUCED: 15 relationships\
-  WROTE: 10 relationships\
-  FOLLOWS: 3 relationships\
-  REVIEWED: 9 relationships\
+📈 Gathering database statistics...
+  Movie: 38 nodes
+  Person: 133 nodes
+  ACTED_IN: 172 relationships
+  DIRECTED: 44 relationships
+  PRODUCED: 15 relationships
+  WROTE: 10 relationships
+  FOLLOWS: 3 relationships
+  REVIEWED: 9 relationships
 
-✅ Generated template migration config: shahar_template.json\
-📝 Total elements analyzed:\
-   - 2 node labels\
-   - 6 relationship types\
-   - 5 node properties\
-   - 3 relationship properties\
+✅ Generated template migration config: shahar_template.json
+📝 Total elements analyzed:
+   - 2 node labels
+   - 6 relationship types
+   - 5 node properties
+   - 3 relationship properties
 
-📋 Analysis complete! Use the generated template to customize your migration.\
+📋 Analysis complete! Use the generated template to customize your migration.
 ```
 --------
 ## Step 4: Extracting data from neo4j and generating csv files
@@ -82,208 +82,208 @@ with headers and content adapted based on guidelines in the migrate_config.json 
 Execution output example
 --------
 ```bash
-Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...\
-✅ Loaded configuration from migrate_config.json\
-✅ Successfully connected to Neo4j!\
-Starting Neo4j to CSV extraction...\
-Found 2 node labels: ['Movie', 'Person']\
-Extracting nodes with label: Movie\
-  🔄 Transformed Movie.released: '1999' -> '1999'\
-  🔄 Transformed Movie.released: '2003' -> '2003'\
-  🔄 Transformed Movie.released: '2003' -> '2003'\
-  🔄 Transformed Movie.released: '1997' -> '1997'\
-  🔄 Transformed Movie.released: '1992' -> '1992'\
-  🔄 Transformed Movie.released: '1986' -> '1986'\
-  🔄 Transformed Movie.released: '2000' -> '2000'\
-  🔄 Transformed Movie.released: '1986' -> '1986'\
-  🔄 Transformed Movie.released: '1997' -> '1997'\
-  🔄 Transformed Movie.released: '1998' -> '1998'\
-  🔄 Transformed Movie.released: '1999' -> '1999'\
-  🔄 Transformed Movie.released: '1998' -> '1998'\
-  🔄 Transformed Movie.released: '1993' -> '1993'\
-  🔄 Transformed Movie.released: '1990' -> '1990'\
-  🔄 Transformed Movie.released: '1998' -> '1998'\
-  🔄 Transformed Movie.released: '1996' -> '1996'\
-  🔄 Transformed Movie.released: '2000' -> '2000'\
-  🔄 Transformed Movie.released: '2006' -> '2006'\
-  🔄 Transformed Movie.released: '1996' -> '1996'\
-  🔄 Transformed Movie.released: '1992' -> '1992'\
-  🔄 Transformed Movie.released: '1995' -> '1995'\
-  🔄 Transformed Movie.released: '2012' -> '2012'\
-  🔄 Transformed Movie.released: '2006' -> '2006'\
-  🔄 Transformed Movie.released: '2006' -> '2006'\
-  🔄 Transformed Movie.released: '2008' -> '2008'\
-  🔄 Transformed Movie.released: '2009' -> '2009'\
-  🔄 Transformed Movie.released: '1999' -> '1999'\
-  🔄 Transformed Movie.released: '2008' -> '2008'\
-  🔄 Transformed Movie.released: '1992' -> '1992'\
-  🔄 Transformed Movie.released: '1995' -> '1995'\
-  🔄 Transformed Movie.released: '1996' -> '1996'\
-  🔄 Transformed Movie.released: '2000' -> '2000'\
-  🔄 Transformed Movie.released: '1975' -> '1975'\
-  🔄 Transformed Movie.released: '2003' -> '2003'\
-  🔄 Transformed Movie.released: '1999' -> '1999'\
-  🔄 Transformed Movie.released: '2007' -> '2007'\
-  🔄 Transformed Movie.released: '2004' -> '2004'\
-  🔄 Transformed Movie.released: '1992' -> '1992'\
-  Processed 38 nodes...\
-  Exported 38 nodes to csv_output/nodes_movie.csv\
-Extracting nodes with label: Person\
-  🔄 Transformed Person.born: '1964' -> '1964'\
-  🔄 Transformed Person.born: '1967' -> '1967'\
-  🔄 Transformed Person.born: '1961' -> '1961'\
-  🔄 Transformed Person.born: '1960' -> '1960'\
-  🔄 Transformed Person.born: '1967' -> '1967'\
-  🔄 Transformed Person.born: '1965' -> '1965'\
-  🔄 Transformed Person.born: '1952' -> '1952'\
-  🔄 Transformed Person.born: '1978' -> '1978'\
-  🔄 Transformed Person.born: '1975' -> '1975'\
-  🔄 Transformed Person.born: '1940' -> '1940'\
-  🔄 Transformed Person.born: '1944' -> '1944'\
-  🔄 Transformed Person.born: '1962' -> '1962'\
-  🔄 Transformed Person.born: '1937' -> '1937'\
-  🔄 Transformed Person.born: '1962' -> '1962'\
-  🔄 Transformed Person.born: '1958' -> '1958'\
-  🔄 Transformed Person.born: '1966' -> '1966'\
-  🔄 Transformed Person.born: '1971' -> '1971'\
-  🔄 Transformed Person.born: '1968' -> '1968'\
-  🔄 Transformed Person.born: '1957' -> '1957'\
-  🔄 Transformed Person.born: '1943' -> '1943'\
-  🔄 Transformed Person.born: '1967' -> '1967'\
-  🔄 Transformed Person.born: '1948' -> '1948'\
-  🔄 Transformed Person.born: '1947' -> '1947'\
-  🔄 Transformed Person.born: '1961' -> '1961'\
-  🔄 Transformed Person.born: '1957' -> '1957'\
-  🔄 Transformed Person.born: '1959' -> '1959'\
-  🔄 Transformed Person.born: '1962' -> '1962'\
-  🔄 Transformed Person.born: '1933' -> '1933'\
-  🔄 Transformed Person.born: '1961' -> '1961'\
-  🔄 Transformed Person.born: '1944' -> '1944'\
-  🔄 Transformed Person.born: '1941' -> '1941'\
-  🔄 Transformed Person.born: '1969' -> '1969'\
-  🔄 Transformed Person.born: '1962' -> '1962'\
-  🔄 Transformed Person.born: '1974' -> '1974'\
-  🔄 Transformed Person.born: '1970' -> '1970'\
-  🔄 Transformed Person.born: '1961' -> '1961'\
-  🔄 Transformed Person.born: '1971' -> '1971'\
-  🔄 Transformed Person.born: '1996' -> '1996'\
-  🔄 Transformed Person.born: '1957' -> '1957'\
-  🔄 Transformed Person.born: '1970' -> '1970'\
-  🔄 Transformed Person.born: '1971' -> '1971'\
-  🔄 Transformed Person.born: '1972' -> '1972'\
-  🔄 Transformed Person.born: '1966' -> '1966'\
-  🔄 Transformed Person.born: '1942' -> '1942'\
-  🔄 Transformed Person.born: '1963' -> '1963'\
-  🔄 Transformed Person.born: '1963' -> '1963'\
-  🔄 Transformed Person.born: '1940' -> '1940'\
-  🔄 Transformed Person.born: '1960' -> '1960'\
-  🔄 Transformed Person.born: '1929' -> '1929'\
-  🔄 Transformed Person.born: '1942' -> '1942'\
-  🔄 Transformed Person.born: '1951' -> '1951'\
-  🔄 Transformed Person.born: '1956' -> '1956'\
-  🔄 Transformed Person.born: '1970' -> '1970'\
-  🔄 Transformed Person.born: '1971' -> '1971'\
-  🔄 Transformed Person.born: '1940' -> '1940'\
-  🔄 Transformed Person.born: '1953' -> '1953'\
-  🔄 Transformed Person.born: '1956' -> '1956'\
-  🔄 Transformed Person.born: '1968' -> '1968'\
-  🔄 Transformed Person.born: '1973' -> '1973'\
-  🔄 Transformed Person.born: '1967' -> '1967'\
-  🔄 Transformed Person.born: '1941' -> '1941'\
-  🔄 Transformed Person.born: '1956' -> '1956'\
-  🔄 Transformed Person.born: '1953' -> '1953'\
-  🔄 Transformed Person.born: '1949' -> '1949'\
-  🔄 Transformed Person.born: '1962' -> '1962'\
-  🔄 Transformed Person.born: '1950' -> '1950'\
-  🔄 Transformed Person.born: '1956' -> '1956'\
-  🔄 Transformed Person.born: '1948' -> '1948'\
-  🔄 Transformed Person.born: '1956' -> '1956'\
-  🔄 Transformed Person.born: '1949' -> '1949'\
-  🔄 Transformed Person.born: '1977' -> '1977'\
-  🔄 Transformed Person.born: '1970' -> '1970'\
-  🔄 Transformed Person.born: '1930' -> '1930'\
-  🔄 Transformed Person.born: '1968' -> '1968'\
-  🔄 Transformed Person.born: '1950' -> '1950'\
-  🔄 Transformed Person.born: '1974' -> '1974'\
-  🔄 Transformed Person.born: '1954' -> '1954'\
-  🔄 Transformed Person.born: '1931' -> '1931'\
-  🔄 Transformed Person.born: '1930' -> '1930'\
-  🔄 Transformed Person.born: '1930' -> '1930'\
-  🔄 Transformed Person.born: '1947' -> '1947'\
-  🔄 Transformed Person.born: '1968' -> '1968'\
-  🔄 Transformed Person.born: '1958' -> '1958'\
-  🔄 Transformed Person.born: '1953' -> '1953'\
-  🔄 Transformed Person.born: '1966' -> '1966'\
-  🔄 Transformed Person.born: '1949' -> '1949'\
-  🔄 Transformed Person.born: '1965' -> '1965'\
-  🔄 Transformed Person.born: '1969' -> '1969'\
-  🔄 Transformed Person.born: '1961' -> '1961'\
-  🔄 Transformed Person.born: '1939' -> '1939'\
-  🔄 Transformed Person.born: '1976' -> '1976'\
-  🔄 Transformed Person.born: '1971' -> '1971'\
-  🔄 Transformed Person.born: '1954' -> '1954'\
-  🔄 Transformed Person.born: '1981' -> '1981'\
-  🔄 Transformed Person.born: '1946' -> '1946'\
-  🔄 Transformed Person.born: '1940' -> '1940'\
-  🔄 Transformed Person.born: '1967' -> '1967'\
-  🔄 Transformed Person.born: '1985' -> '1985'\
-  🔄 Transformed Person.born: '1960' -> '1960'\
-  🔄 Transformed Person.born: '1946' -> '1946'\
-  🔄 Transformed Person.born: '1966' -> '1966'\
-  🔄 Transformed Person.born: '1980' -> '1980'\
-  🔄 Transformed Person.born: '1982' -> '1982'\
-  🔄 Transformed Person.born: '1957' -> '1957'\
-  🔄 Transformed Person.born: '1953' -> '1953'\
-  🔄 Transformed Person.born: '1968' -> '1968'\
-  🔄 Transformed Person.born: '1955' -> '1955'\
-  🔄 Transformed Person.born: '1959' -> '1959'\
-  🔄 Transformed Person.born: '1959' -> '1959'\
-  🔄 Transformed Person.born: '1938' -> '1938'\
-  🔄 Transformed Person.born: '1969' -> '1969'\
-  🔄 Transformed Person.born: '1960' -> '1960'\
-  🔄 Transformed Person.born: '1944' -> '1944'\
-  🔄 Transformed Person.born: '1965' -> '1965'\
-  🔄 Transformed Person.born: '1950' -> '1950'\
-  🔄 Transformed Person.born: '1955' -> '1955'\
-  🔄 Transformed Person.born: '1967' -> '1967'\
-  🔄 Transformed Person.born: '1943' -> '1943'\
-  🔄 Transformed Person.born: '1951' -> '1951'\
-  🔄 Transformed Person.born: '1932' -> '1932'\
-  🔄 Transformed Person.born: '1946' -> '1946'\
-  🔄 Transformed Person.born: '1949' -> '1949'\
-  🔄 Transformed Person.born: '1958' -> '1958'\
-  🔄 Transformed Person.born: '1967' -> '1967'\
-  🔄 Transformed Person.born: '1954' -> '1954'\
-  🔄 Transformed Person.born: '1956' -> '1956'\
-  🔄 Transformed Person.born: '1963' -> '1963'\
-  🔄 Transformed Person.born: '1943' -> '1943'\
-  Processed 133 nodes...\
-  Exported 133 nodes to csv_output/nodes_person.csv\
-Found 6 relationship types: ['ACTED_IN', 'DIRECTED', 'PRODUCED', 'WROTE', 'FOLLOWS', 'REVIEWED']\
-Extracting relationships of type: ACTED_IN\
-  Processed 172 relationships...\
-  Exported 172 relationships to csv_output/edges_acted_in.csv\
-Extracting relationships of type: DIRECTED\
-  Processed 44 relationships...\
-  Exported 44 relationships to csv_output/edges_directed.csv\
-Extracting relationships of type: PRODUCED\
-  Processed 15 relationships...\
-  Exported 15 relationships to csv_output/edges_produced.csv\
-Extracting relationships of type: WROTE\
-  Processed 10 relationships...\
-  Exported 10 relationships to csv_output/edges_wrote.csv\
-Extracting relationships of type: FOLLOWS\
-  Processed 3 relationships...\
-  Exported 3 relationships to csv_output/edges_follows.csv\
-Extracting relationships of type: REVIEWED\
-  Processed 9 relationships...\
-  Exported 9 relationships to csv_output/edges_reviewed.csv\
-Generated FalkorDB load script: csv_output/load_to_falkordb.cypher\
+Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...
+✅ Loaded configuration from migrate_config.json
+✅ Successfully connected to Neo4j!
+Starting Neo4j to CSV extraction...
+Found 2 node labels: ['Movie', 'Person']
+Extracting nodes with label: Movie
+  🔄 Transformed Movie.released: '1999' -> '1999'
+  🔄 Transformed Movie.released: '2003' -> '2003'
+  🔄 Transformed Movie.released: '2003' -> '2003'
+  🔄 Transformed Movie.released: '1997' -> '1997'
+  🔄 Transformed Movie.released: '1992' -> '1992'
+  🔄 Transformed Movie.released: '1986' -> '1986'
+  🔄 Transformed Movie.released: '2000' -> '2000'
+  🔄 Transformed Movie.released: '1986' -> '1986'
+  🔄 Transformed Movie.released: '1997' -> '1997'
+  🔄 Transformed Movie.released: '1998' -> '1998'
+  🔄 Transformed Movie.released: '1999' -> '1999'
+  🔄 Transformed Movie.released: '1998' -> '1998'
+  🔄 Transformed Movie.released: '1993' -> '1993'
+  🔄 Transformed Movie.released: '1990' -> '1990'
+  🔄 Transformed Movie.released: '1998' -> '1998'
+  🔄 Transformed Movie.released: '1996' -> '1996'
+  🔄 Transformed Movie.released: '2000' -> '2000'
+  🔄 Transformed Movie.released: '2006' -> '2006'
+  🔄 Transformed Movie.released: '1996' -> '1996'
+  🔄 Transformed Movie.released: '1992' -> '1992'
+  🔄 Transformed Movie.released: '1995' -> '1995'
+  🔄 Transformed Movie.released: '2012' -> '2012'
+  🔄 Transformed Movie.released: '2006' -> '2006'
+  🔄 Transformed Movie.released: '2006' -> '2006'
+  🔄 Transformed Movie.released: '2008' -> '2008'
+  🔄 Transformed Movie.released: '2009' -> '2009'
+  🔄 Transformed Movie.released: '1999' -> '1999'
+  🔄 Transformed Movie.released: '2008' -> '2008'
+  🔄 Transformed Movie.released: '1992' -> '1992'
+  🔄 Transformed Movie.released: '1995' -> '1995'
+  🔄 Transformed Movie.released: '1996' -> '1996'
+  🔄 Transformed Movie.released: '2000' -> '2000'
+  🔄 Transformed Movie.released: '1975' -> '1975'
+  🔄 Transformed Movie.released: '2003' -> '2003'
+  🔄 Transformed Movie.released: '1999' -> '1999'
+  🔄 Transformed Movie.released: '2007' -> '2007'
+  🔄 Transformed Movie.released: '2004' -> '2004'
+  🔄 Transformed Movie.released: '1992' -> '1992'
+  Processed 38 nodes...
+  Exported 38 nodes to csv_output/nodes_movie.csv
+Extracting nodes with label: Person
+  🔄 Transformed Person.born: '1964' -> '1964'
+  🔄 Transformed Person.born: '1967' -> '1967'
+  🔄 Transformed Person.born: '1961' -> '1961'
+  🔄 Transformed Person.born: '1960' -> '1960'
+  🔄 Transformed Person.born: '1967' -> '1967'
+  🔄 Transformed Person.born: '1965' -> '1965'
+  🔄 Transformed Person.born: '1952' -> '1952'
+  🔄 Transformed Person.born: '1978' -> '1978'
+  🔄 Transformed Person.born: '1975' -> '1975'
+  🔄 Transformed Person.born: '1940' -> '1940'
+  🔄 Transformed Person.born: '1944' -> '1944'
+  🔄 Transformed Person.born: '1962' -> '1962'
+  🔄 Transformed Person.born: '1937' -> '1937'
+  🔄 Transformed Person.born: '1962' -> '1962'
+  🔄 Transformed Person.born: '1958' -> '1958'
+  🔄 Transformed Person.born: '1966' -> '1966'
+  🔄 Transformed Person.born: '1971' -> '1971'
+  🔄 Transformed Person.born: '1968' -> '1968'
+  🔄 Transformed Person.born: '1957' -> '1957'
+  🔄 Transformed Person.born: '1943' -> '1943'
+  🔄 Transformed Person.born: '1967' -> '1967'
+  🔄 Transformed Person.born: '1948' -> '1948'
+  🔄 Transformed Person.born: '1947' -> '1947'
+  🔄 Transformed Person.born: '1961' -> '1961'
+  🔄 Transformed Person.born: '1957' -> '1957'
+  🔄 Transformed Person.born: '1959' -> '1959'
+  🔄 Transformed Person.born: '1962' -> '1962'
+  🔄 Transformed Person.born: '1933' -> '1933'
+  🔄 Transformed Person.born: '1961' -> '1961'
+  🔄 Transformed Person.born: '1944' -> '1944'
+  🔄 Transformed Person.born: '1941' -> '1941'
+  🔄 Transformed Person.born: '1969' -> '1969'
+  🔄 Transformed Person.born: '1962' -> '1962'
+  🔄 Transformed Person.born: '1974' -> '1974'
+  🔄 Transformed Person.born: '1970' -> '1970'
+  🔄 Transformed Person.born: '1961' -> '1961'
+  🔄 Transformed Person.born: '1971' -> '1971'
+  🔄 Transformed Person.born: '1996' -> '1996'
+  🔄 Transformed Person.born: '1957' -> '1957'
+  🔄 Transformed Person.born: '1970' -> '1970'
+  🔄 Transformed Person.born: '1971' -> '1971'
+  🔄 Transformed Person.born: '1972' -> '1972'
+  🔄 Transformed Person.born: '1966' -> '1966'
+  🔄 Transformed Person.born: '1942' -> '1942'
+  🔄 Transformed Person.born: '1963' -> '1963'
+  🔄 Transformed Person.born: '1963' -> '1963'
+  🔄 Transformed Person.born: '1940' -> '1940'
+  🔄 Transformed Person.born: '1960' -> '1960'
+  🔄 Transformed Person.born: '1929' -> '1929'
+  🔄 Transformed Person.born: '1942' -> '1942'
+  🔄 Transformed Person.born: '1951' -> '1951'
+  🔄 Transformed Person.born: '1956' -> '1956'
+  🔄 Transformed Person.born: '1970' -> '1970'
+  🔄 Transformed Person.born: '1971' -> '1971'
+  🔄 Transformed Person.born: '1940' -> '1940'
+  🔄 Transformed Person.born: '1953' -> '1953'
+  🔄 Transformed Person.born: '1956' -> '1956'
+  🔄 Transformed Person.born: '1968' -> '1968'
+  🔄 Transformed Person.born: '1973' -> '1973'
+  🔄 Transformed Person.born: '1967' -> '1967'
+  🔄 Transformed Person.born: '1941' -> '1941
+  🔄 Transformed Person.born: '1956' -> '1956'
+  🔄 Transformed Person.born: '1953' -> '1953'
+  🔄 Transformed Person.born: '1949' -> '1949'
+  🔄 Transformed Person.born: '1962' -> '1962'
+  🔄 Transformed Person.born: '1950' -> '1950'
+  🔄 Transformed Person.born: '1956' -> '1956'
+  🔄 Transformed Person.born: '1948' -> '1948'
+  🔄 Transformed Person.born: '1956' -> '1956'
+  🔄 Transformed Person.born: '1949' -> '1949'
+  🔄 Transformed Person.born: '1977' -> '1977'
+  🔄 Transformed Person.born: '1970' -> '1970'
+  🔄 Transformed Person.born: '1930' -> '1930'
+  🔄 Transformed Person.born: '1968' -> '1968'
+  🔄 Transformed Person.born: '1950' -> '1950'
+  🔄 Transformed Person.born: '1974' -> '1974'
+  🔄 Transformed Person.born: '1954' -> '1954'
+  🔄 Transformed Person.born: '1931' -> '1931'
+  🔄 Transformed Person.born: '1930' -> '1930'
+  🔄 Transformed Person.born: '1930' -> '1930'
+  🔄 Transformed Person.born: '1947' -> '1947'
+  🔄 Transformed Person.born: '1968' -> '1968'
+  🔄 Transformed Person.born: '1958' -> '1958'
+  🔄 Transformed Person.born: '1953' -> '1953'
+  🔄 Transformed Person.born: '1966' -> '1966'
+  🔄 Transformed Person.born: '1949' -> '1949'
+  🔄 Transformed Person.born: '1965' -> '1965'
+  🔄 Transformed Person.born: '1969' -> '1969'
+  🔄 Transformed Person.born: '1961' -> '1961'
+  🔄 Transformed Person.born: '1939' -> '1939'
+  🔄 Transformed Person.born: '1976' -> '1976'
+  🔄 Transformed Person.born: '1971' -> '1971'
+  🔄 Transformed Person.born: '1954' -> '1954'
+  🔄 Transformed Person.born: '1981' -> '1981'
+  🔄 Transformed Person.born: '1946' -> '1946'
+  🔄 Transformed Person.born: '1940' -> '1940'
+  🔄 Transformed Person.born: '1967' -> '1967'
+  🔄 Transformed Person.born: '1985' -> '1985'
+  🔄 Transformed Person.born: '1960' -> '1960'
+  🔄 Transformed Person.born: '1946' -> '1946'
+  🔄 Transformed Person.born: '1966' -> '1966'
+  🔄 Transformed Person.born: '1980' -> '1980'
+  🔄 Transformed Person.born: '1982' -> '1982'
+  🔄 Transformed Person.born: '1957' -> '1957'
+  🔄 Transformed Person.born: '1953' -> '1953'
+  🔄 Transformed Person.born: '1968' -> '1968'
+  🔄 Transformed Person.born: '1955' -> '1955'
+  🔄 Transformed Person.born: '1959' -> '1959'
+  🔄 Transformed Person.born: '1959' -> '1959'
+  🔄 Transformed Person.born: '1938' -> '1938'
+  🔄 Transformed Person.born: '1969' -> '1969'
+  🔄 Transformed Person.born: '1960' -> '1960'
+  🔄 Transformed Person.born: '1944' -> '1944'
+  🔄 Transformed Person.born: '1965' -> '1965'
+  🔄 Transformed Person.born: '1950' -> '1950'
+  🔄 Transformed Person.born: '1955' -> '1955'
+  🔄 Transformed Person.born: '1967' -> '1967'
+  🔄 Transformed Person.born: '1943' -> '1943'
+  🔄 Transformed Person.born: '1951' -> '1951'
+  🔄 Transformed Person.born: '1932' -> '1932'
+  🔄 Transformed Person.born: '1946' -> '1946'
+  🔄 Transformed Person.born: '1949' -> '1949'
+  🔄 Transformed Person.born: '1958' -> '1958'
+  🔄 Transformed Person.born: '1967' -> '1967'
+  🔄 Transformed Person.born: '1954' -> '1954'
+  🔄 Transformed Person.born: '1956' -> '1956'
+  🔄 Transformed Person.born: '1963' -> '1963'
+  🔄 Transformed Person.born: '1943' -> '1943'
+  Processed 133 nodes...
+  Exported 133 nodes to csv_output/nodes_person.csv
+Found 6 relationship types: ['ACTED_IN', 'DIRECTED', 'PRODUCED', 'WROTE', 'FOLLOWS', 'REVIEWED']
+Extracting relationships of type: ACTED_IN
+  Processed 172 relationships...
+  Exported 172 relationships to csv_output/edges_acted_in.csv
+Extracting relationships of type: DIRECTED
+  Processed 44 relationships...
+  Exported 44 relationships to csv_output/edges_directed.csv
+Extracting relationships of type: PRODUCED
+  Processed 15 relationships...
+  Exported 15 relationships to csv_output/edges_produced.csv
+Extracting relationships of type: WROTE
+  Processed 10 relationships...
+  Exported 10 relationships to csv_output/edges_wrote.csv
+Extracting relationships of type: FOLLOWS
+  Processed 3 relationships...
+  Exported 3 relationships to csv_output/edges_follows.csv
+Extracting relationships of type: REVIEWED
+  Processed 9 relationships...
+  Exported 9 relationships to csv_output/edges_reviewed.csv
+Generated FalkorDB load script: csv_output/load_to_falkordb.cypher
 
-Extraction complete!\
-Node files: 2\
-Edge files: 6\
-Load script: csv_output/load_to_falkordb.cypher\
+Extraction complete!
+Node files: 2
+Edge files: 6
+Load script: csv_output/load_to_falkordb.cypher
 ```
 --------
 
@@ -300,95 +300,95 @@ Note: In case your FalkorDB connection is secured with username and password you
 ```bash
 usage: falkordb_csv_loader_fixed.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--batch-size BATCH_SIZE] [--stats] graph_name
 
-Load CSV files into FalkorDB\
+Load CSV files into FalkorDB
 
-positional arguments:\
-  graph_name            Target graph name in FalkorDB\
+positional arguments:
+  graph_name            Target graph name in FalkorDB
 
-options:\
-  -h, --help            show this help message and exit\
-  --host HOST           FalkorDB host\
-  --port PORT           FalkorDB port\
-  --username USERNAME   FalkorDB username (optional)\
-  --password PASSWORD   FalkorDB password (optional)\
-  --batch-size BATCH_SIZE\
-                        Batch size for loading\
-  --stats               Show graph statistics after loading\
+options:
+  -h, --help            show this help message and exit
+  --host HOST           FalkorDB host
+  --port PORT           FalkorDB port
+  --username USERNAME   FalkorDB username (optional)
+  --password PASSWORD   FalkorDB password (optional)
+  --batch-size BATCH_SIZE
+                        Batch size for loading
+  --stats               Show graph statistics after loading
 ```
 
 ---------
 Execution output example
 ---------
 ```bash
-Connecting to FalkorDB at localhost:6379...\
-✅ Connected to FalkorDB graph 'MOVIES'\
-Found 2 node files and 6 edge files\
+Connecting to FalkorDB at localhost:6379...
+✅ Connected to FalkorDB graph 'MOVIES'
+Found 2 node files and 6 edge files
 
-📥 Loading nodes...\
-Loading nodes from csv_output/nodes_movie.csv...\
-  Read 38 rows from csv_output/nodes_movie.csv\
-  CSV headers: ['id', 'labels', 'release_year', 'tagline', 'name']\
-    Record 1: properties = {'release_year': 1999, 'tagline': 'Welcome to the Real World', 'name': 'The Matrix'}\
-    Generated query: CREATE (:Movie {id: 0, release_year: 1999, tagline: 'Welcome to the Real World', name: 'The Matrix'})\
-    Record 2: properties = {'release_year': 2003, 'tagline': 'Free your mind', 'name': 'The Matrix Reloaded'}\
-    Generated query: CREATE (:Movie {id: 9, release_year: 2003, tagline: 'Free your mind', name: 'The Matrix Reloaded'})\
-    Record 3: properties = {'release_year': 2003, 'tagline': 'Everything that has a beginning has an end', 'name': 'The Matrix Revolutions'}\
-    Generated query: CREATE (:Movie {id: 10, release_year: 2003, tagline: 'Everything that has a beginning has an end', name: 'The Matrix Revolutions'})\
-  Loaded 38/38 nodes...\
-✅ Loaded 38 Movie nodes\
-Loading nodes from csv_output/nodes_person.csv...\
-  Read 133 rows from csv_output/nodes_person.csv\
-  CSV headers: ['id', 'labels', 'birth_year', 'name']\
-    Record 1: properties = {'birth_year': 1964, 'name': 'Keanu Reeves'}\
-    Generated query: CREATE (:Person {id: 1, birth_year: 1964, name: 'Keanu Reeves'})\
-    Record 2: properties = {'birth_year': 1967, 'name': 'Carrie-Anne Moss'}\
-    Generated query: CREATE (:Person {id: 2, birth_year: 1967, name: 'Carrie-Anne Moss'})\
-    Record 3: properties = {'birth_year': 1961, 'name': 'Laurence Fishburne'}\
-    Generated query: CREATE (:Person {id: 3, birth_year: 1961, name: 'Laurence Fishburne'})\
-  Loaded 100/133 nodes...\
-  Loaded 133/133 nodes...\
-✅ Loaded 133 Person nodes\
+📥 Loading nodes...
+Loading nodes from csv_output/nodes_movie.csv...
+  Read 38 rows from csv_output/nodes_movie.csv
+  CSV headers: ['id', 'labels', 'release_year', 'tagline', 'name']
+    Record 1: properties = {'release_year': 1999, 'tagline': 'Welcome to the Real World', 'name': 'The Matrix'}
+    Generated query: CREATE (:Movie {id: 0, release_year: 1999, tagline: 'Welcome to the Real World', name: 'The Matrix'})
+    Record 2: properties = {'release_year': 2003, 'tagline': 'Free your mind', 'name': 'The Matrix Reloaded'}
+    Generated query: CREATE (:Movie {id: 9, release_year: 2003, tagline: 'Free your mind', name: 'The Matrix Reloaded'})
+    Record 3: properties = {'release_year': 2003, 'tagline': 'Everything that has a beginning has an end', 'name': 'The Matrix Revolutions'}
+    Generated query: CREATE (:Movie {id: 10, release_year: 2003, tagline: 'Everything that has a beginning has an end', name: 'The Matrix Revolutions'})
+  Loaded 38/38 nodes...
+✅ Loaded 38 Movie nodes
+Loading nodes from csv_output/nodes_person.csv...
+  Read 133 rows from csv_output/nodes_person.csv
+  CSV headers: ['id', 'labels', 'birth_year', 'name']
+    Record 1: properties = {'birth_year': 1964, 'name': 'Keanu Reeves'}
+    Generated query: CREATE (:Person {id: 1, birth_year: 1964, name: 'Keanu Reeves'})
+    Record 2: properties = {'birth_year': 1967, 'name': 'Carrie-Anne Moss'}
+    Generated query: CREATE (:Person {id: 2, birth_year: 1967, name: 'Carrie-Anne Moss'})
+    Record 3: properties = {'birth_year': 1961, 'name': 'Laurence Fishburne'}
+    Generated query: CREATE (:Person {id: 3, birth_year: 1961, name: 'Laurence Fishburne'})
+  Loaded 100/133 nodes...
+  Loaded 133/133 nodes...
+✅ Loaded 133 Person nodes
 
-🔗 Loading edges...\
-Loading edges from csv_output/edges_produced.csv...\
-  Read 15 rows from csv_output/edges_produced.csv\
-  Loaded 15/15 edges...\
-✅ Loaded 15 PRODUCED relationships\
-Loading edges from csv_output/edges_follows.csv...\
-  Read 3 rows from csv_output/edges_follows.csv\
-  Loaded 3/3 edges...\
-✅ Loaded 3 FOLLOWS relationships\
-Loading edges from csv_output/edges_acted_in.csv...\
-  Read 172 rows from csv_output/edges_acted_in.csv\
-  Loaded 100/172 edges...\
-  Loaded 172/172 edges...\
-✅ Loaded 172 ACTED_IN relationships\
-Loading edges from csv_output/edges_reviewed.csv...\
-  Read 9 rows from csv_output/edges_reviewed.csv\
-  Loaded 9/9 edges...\
-✅ Loaded 9 REVIEWED relationships\
-Loading edges from csv_output/edges_wrote.csv...\
-  Read 10 rows from csv_output/edges_wrote.csv\
-  Loaded 10/10 edges...\
-✅ Loaded 10 WROTE relationships\
-Loading edges from csv_output/edges_directed.csv...\
-  Read 44 rows from csv_output/edges_directed.csv\
-  Loaded 44/44 edges...\
-✅ Loaded 44 DIRECTED relationships\
+🔗 Loading edges...
+Loading edges from csv_output/edges_produced.csv...
+  Read 15 rows from csv_output/edges_produced.csv
+  Loaded 15/15 edges...
+✅ Loaded 15 PRODUCED relationships
+Loading edges from csv_output/edges_follows.csv...
+  Read 3 rows from csv_output/edges_follows.csv
+  Loaded 3/3 edges...
+✅ Loaded 3 FOLLOWS relationships
+Loading edges from csv_output/edges_acted_in.csv...
+  Read 172 rows from csv_output/edges_acted_in.csv
+  Loaded 100/172 edges...
+  Loaded 172/172 edges...
+✅ Loaded 172 ACTED_IN relationships
+Loading edges from csv_output/edges_reviewed.csv...
+  Read 9 rows from csv_output/edges_reviewed.csv
+  Loaded 9/9 edges...
+✅ Loaded 9 REVIEWED relationships
+Loading edges from csv_output/edges_wrote.csv...
+  Read 10 rows from csv_output/edges_wrote.csv
+  Loaded 10/10 edges...
+✅ Loaded 10 WROTE relationships
+Loading edges from csv_output/edges_directed.csv...
+  Read 44 rows from csv_output/edges_directed.csv
+  Loaded 44/44 edges...
+✅ Loaded 44 DIRECTED relationships
 
-✅ Successfully loaded data into graph 'MOVIES'\
+✅ Successfully loaded data into graph 'MOVIES'
 
-📊 Graph Statistics:\
-Nodes:\
-  ['Movie']: 38\
-  ['Person']: 133\
-Relationships:\
-  PRODUCED: 15\
-  REVIEWED: 9\
-  DIRECTED: 44\
-  WROTE: 10\
-  ACTED_IN: 172\
-  FOLLOWS: 3\
+📊 Graph Statistics:
+Nodes:
+  ['Movie']: 38
+  ['Person']: 133
+Relationships:
+  PRODUCED: 15
+  REVIEWED: 9
+  DIRECTED: 44
+  WROTE: 10
+  ACTED_IN: 172
+  FOLLOWS: 3
 ```
 ---------
 
