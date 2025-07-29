@@ -156,6 +156,225 @@ class Neo4jToCSVExtractor:
             result = session.run(query)
             return {record["key"] for record in result}
     
+    def get_indexes(self) -> List[Dict[str, Any]]:
+        """Get all indexes in the database"""
+        indexes = []
+        with self.driver.session(database=self.database) as session:
+            try:
+                # Try the modern SHOW INDEXES command (Neo4j 4.0+)
+                result = session.run("SHOW INDEXES")
+                for record in result:
+                    index_info = {
+                        'name': record.get('name', 'unknown'),
+                        'type': record.get('type', 'unknown'),
+                        'state': record.get('state', 'unknown'),
+                        'population_percent': record.get('populationPercent', 0),
+                        'uniqueness': record.get('uniqueness', 'NON_UNIQUE'),
+                        'entity_type': record.get('entityType', 'NODE'),
+                        'labels': record.get('labelsOrTypes', []),
+                        'properties': record.get('properties', []),
+                        'provider': record.get('provider', {})
+                    }
+                    indexes.append(index_info)
+            except Exception as e:
+                print(f"SHOW INDEXES failed, trying legacy command: {e}")
+                try:
+                    # Fallback to legacy db.indexes() for older Neo4j versions
+                    result = session.run("CALL db.indexes()")
+                    for record in result:
+                        index_info = {
+                            'name': record.get('indexName', record.get('name', 'unknown')),
+                            'type': record.get('type', 'unknown'),
+                            'state': record.get('state', 'unknown'),
+                            'population_percent': record.get('populationPercent', 0),
+                            'uniqueness': 'UNIQUE' if record.get('uniqueness', False) else 'NON_UNIQUE',
+                            'entity_type': 'NODE',  # Legacy indexes are typically node indexes
+                            'labels': record.get('tokenNames', []),
+                            'properties': record.get('properties', []),
+                            'provider': record.get('provider', {})
+                        }
+                        indexes.append(index_info)
+                except Exception as e2:
+                    print(f"Legacy db.indexes() also failed: {e2}")
+                    # Try even older approach
+                    try:
+                        result = session.run("CALL db.schema.nodeTypeProperties()")
+                        schema_info = list(result)
+                        if schema_info:
+                            print("Found schema information, but no direct index access available")
+                    except Exception as e3:
+                        print(f"No index information could be retrieved: {e3}")
+        
+        return indexes
+    
+    def get_constraints(self) -> List[Dict[str, Any]]:
+        """Get all constraints in the database"""
+        constraints = []
+        with self.driver.session(database=self.database) as session:
+            try:
+                # Try the modern SHOW CONSTRAINTS command (Neo4j 4.0+)
+                result = session.run("SHOW CONSTRAINTS")
+                for record in result:
+                    constraint_info = {
+                        'name': record.get('name', 'unknown'),
+                        'type': record.get('type', 'unknown'),
+                        'entity_type': record.get('entityType', 'NODE'),
+                        'labels': record.get('labelsOrTypes', []),
+                        'properties': record.get('properties', []),
+                        'options': record.get('options', {})
+                    }
+                    constraints.append(constraint_info)
+            except Exception as e:
+                print(f"SHOW CONSTRAINTS failed, trying legacy command: {e}")
+                try:
+                    # Fallback to legacy db.constraints() for older Neo4j versions
+                    result = session.run("CALL db.constraints()")
+                    for record in result:
+                        constraint_info = {
+                            'name': record.get('name', 'unknown'),
+                            'type': record.get('type', 'unknown'),
+                            'entity_type': 'NODE',  # Legacy constraints are typically node constraints
+                            'labels': record.get('label', '').split(':') if record.get('label') else [],
+                            'properties': record.get('properties', []),
+                            'options': {}
+                        }
+                        constraints.append(constraint_info)
+                except Exception as e2:
+                    print(f"Legacy db.constraints() also failed: {e2}")
+        
+        return constraints
+    
+    def extract_indexes_to_csv(self) -> str:
+        """Extract all indexes to CSV file"""
+        print("Extracting database indexes...")
+        
+        indexes = self.get_indexes()
+        csv_filename = os.path.join(self.output_dir, "indexes.csv")
+        
+        with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+            headers = ['name', 'type', 'state', 'population_percent', 'uniqueness', 
+                      'entity_type', 'labels', 'properties', 'provider']
+            writer = csv.DictWriter(csvfile, fieldnames=headers)
+            writer.writeheader()
+            
+            for index in indexes:
+                # Safely handle labels field
+                labels = index.get('labels', [])
+                if not isinstance(labels, list):
+                    labels = [str(labels)] if labels else []
+                
+                # Safely handle properties field
+                properties = index.get('properties', [])
+                if not isinstance(properties, list):
+                    properties = [str(properties)] if properties else []
+                
+                row = {
+                    'name': index.get('name', ''),
+                    'type': index.get('type', ''),
+                    'state': index.get('state', ''),
+                    'population_percent': index.get('population_percent', 0),
+                    'uniqueness': index.get('uniqueness', ''),
+                    'entity_type': index.get('entity_type', ''),
+                    'labels': ';'.join(labels),
+                    'properties': ';'.join(properties),
+                    'provider': json.dumps(index.get('provider', {}))
+                }
+                writer.writerow(row)
+        
+        print(f"  Exported {len(indexes)} indexes to {csv_filename}")
+        return csv_filename
+    
+    def extract_constraints_to_csv(self) -> str:
+        """Extract all constraints to CSV file"""
+        print("Extracting database constraints...")
+        
+        constraints = self.get_constraints()
+        csv_filename = os.path.join(self.output_dir, "constraints.csv")
+        
+        with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+            headers = ['name', 'type', 'entity_type', 'labels', 'properties', 'options']
+            writer = csv.DictWriter(csvfile, fieldnames=headers)
+            writer.writeheader()
+            
+            for constraint in constraints:
+                # Safely handle labels field
+                labels = constraint.get('labels', [])
+                if not isinstance(labels, list):
+                    labels = [str(labels)] if labels else []
+                
+                # Safely handle properties field
+                properties = constraint.get('properties', [])
+                if not isinstance(properties, list):
+                    properties = [str(properties)] if properties else []
+                
+                row = {
+                    'name': constraint.get('name', ''),
+                    'type': constraint.get('type', ''),
+                    'entity_type': constraint.get('entity_type', ''),
+                    'labels': ';'.join(labels),
+                    'properties': ';'.join(properties),
+                    'options': json.dumps(constraint.get('options', {}))
+                }
+                writer.writerow(row)
+        
+        print(f"  Exported {len(constraints)} constraints to {csv_filename}")
+        return csv_filename
+    
+    def generate_falkordb_index_script(self, index_file: str, constraint_file: str) -> str:
+        """Generate FalkorDB index creation script"""
+        script_filename = os.path.join(self.output_dir, "create_indexes_falkordb.cypher")
+        
+        with open(script_filename, 'w') as f:
+            f.write("// FalkorDB Index Creation Script - Generated from Neo4j Export\n")
+            f.write("// Run this script in FalkorDB to recreate indexes and constraints\n\n")
+            
+            # Read and process indexes
+            f.write("// Create Indexes\n")
+            try:
+                with open(index_file, 'r', encoding='utf-8') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for row in reader:
+                        if row['labels'] and row['properties']:
+                            labels = row['labels'].split(';')
+                            properties = row['properties'].split(';')
+                            
+                            for label in labels:
+                                for prop in properties:
+                                    # Convert Neo4j index to FalkorDB syntax
+                                    if row['uniqueness'] == 'UNIQUE':
+                                        f.write(f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE;\n")
+                                    else:
+                                        f.write(f"CREATE INDEX ON :{label}({prop});\n")
+                f.write("\n")
+            except Exception as e:
+                f.write(f"// Error reading index file: {e}\n\n")
+            
+            # Read and process constraints
+            f.write("// Create Constraints\n")
+            try:
+                with open(constraint_file, 'r', encoding='utf-8') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for row in reader:
+                        if row['labels'] and row['properties']:
+                            labels = row['labels'].split(';')
+                            properties = row['properties'].split(';')
+                            
+                            for label in labels:
+                                for prop in properties:
+                                    constraint_type = row['type'].upper()
+                                    
+                                    if 'UNIQUE' in constraint_type:
+                                        f.write(f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE;\n")
+                                    elif 'EXIST' in constraint_type or 'NOT_NULL' in constraint_type:
+                                        f.write(f"// Note: FalkorDB may not support existence constraints - verify manually\n")
+                                        f.write(f"// CREATE CONSTRAINT ON (n:{label}) ASSERT exists(n.{prop});\n")
+                f.write("\n")
+            except Exception as e:
+                f.write(f"// Error reading constraint file: {e}\n\n")
+        
+        print(f"Generated FalkorDB index creation script: {script_filename}")
+        return script_filename
+    
     def extract_nodes_by_label(self, label: str, batch_size: int = 1000) -> str:
         """Extract all nodes with a specific label to CSV"""
         print(f"Extracting nodes with label: {label}")
@@ -570,19 +789,28 @@ REMOVE r.source, r.target, r.type;
         
         return output_file
     
-    def extract_all(self, batch_size: int = 1000) -> Dict[str, List[str]]:
-        """Extract all nodes and relationships"""
+    def extract_all(self, batch_size: int = 1000) -> Dict[str, Any]:
+        """Extract all nodes, relationships, indexes, and constraints"""
         print("Starting Neo4j to CSV extraction...")
         
         node_files = self.extract_all_nodes(batch_size)
         edge_files = self.extract_all_relationships(batch_size)
         
-        script_file = self.generate_falkordb_load_script(node_files, edge_files)
+        # Extract indexes and constraints
+        index_file = self.extract_indexes_to_csv()
+        constraint_file = self.extract_constraints_to_csv()
+        
+        # Generate scripts
+        data_script_file = self.generate_falkordb_load_script(node_files, edge_files)
+        index_script_file = self.generate_falkordb_index_script(index_file, constraint_file)
         
         return {
             'nodes': node_files,
             'edges': edge_files,
-            'script': script_file
+            'indexes': index_file,
+            'constraints': constraint_file,
+            'data_script': data_script_file,
+            'index_script': index_script_file
         }
 
 
@@ -612,6 +840,7 @@ Examples:
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for extraction')
     parser.add_argument('--nodes-only', action='store_true', help='Extract only nodes')
     parser.add_argument('--edges-only', action='store_true', help='Extract only relationships')
+    parser.add_argument('--indexes-only', action='store_true', help='Extract only indexes and constraints')
     parser.add_argument('--config', help='Path to migration configuration JSON file')
     parser.add_argument('--generate-template', help='Generate template migration config file from Neo4j topology (specify output filename)')
     parser.add_argument('--analyze-only', action='store_true', help='Only analyze topology and generate template config, do not extract data')
@@ -635,12 +864,23 @@ Examples:
             extractor.extract_all_nodes(args.batch_size)
         elif args.edges_only:
             extractor.extract_all_relationships(args.batch_size)
+        elif args.indexes_only:
+            index_file = extractor.extract_indexes_to_csv()
+            constraint_file = extractor.extract_constraints_to_csv()
+            index_script_file = extractor.generate_falkordb_index_script(index_file, constraint_file)
+            print("\nIndex and constraint extraction complete!")
+            print(f"Index file: {index_file}")
+            print(f"Constraint file: {constraint_file}")
+            print(f"Index creation script: {index_script_file}")
         else:
             result = extractor.extract_all(args.batch_size)
             print("\nExtraction complete!")
             print(f"Node files: {len(result['nodes'])}")
             print(f"Edge files: {len(result['edges'])}")
-            print(f"Load script: {result['script']}")
+            print(f"Index file: {result['indexes']}")
+            print(f"Constraint file: {result['constraints']}")
+            print(f"Data load script: {result['data_script']}")
+            print(f"Index creation script: {result['index_script']}")
     
     finally:
         extractor.close()

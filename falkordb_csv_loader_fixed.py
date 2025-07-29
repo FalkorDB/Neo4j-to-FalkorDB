@@ -53,6 +53,111 @@ class FalkorDBCSVLoader:
             print(f"❌ Error reading {file_path}: {e}")
             return []
     
+    def create_indexes_from_csv(self):
+        """Create indexes from indexes.csv file"""
+        indexes_file = os.path.join(self.csv_dir, 'indexes.csv')
+        if not os.path.exists(indexes_file):
+            print("⚠️ No indexes.csv file found, skipping index creation")
+            return
+        
+        print("🔧 Creating indexes...")
+        indexes = self.read_csv_file(indexes_file)
+        
+        created_count = 0
+        skipped_count = 0
+        
+        for index in indexes:
+            labels = index.get('labels', '').strip()
+            properties = index.get('properties', '').strip()
+            uniqueness = index.get('uniqueness', 'NON_UNIQUE')
+            index_type = index.get('type', '').upper()
+            
+            # Skip system indexes and indexes without labels/properties
+            if not labels or not properties or index_type == 'LOOKUP':
+                skipped_count += 1
+                continue
+            
+            # Split labels and properties (in case there are multiple)
+            label_list = [l.strip() for l in labels.split(';') if l.strip()]
+            prop_list = [p.strip() for p in properties.split(';') if p.strip()]
+            
+            # Create index for each label-property combination
+            for label in label_list:
+                for prop in prop_list:
+                    try:
+                        if uniqueness == 'UNIQUE':
+                            # Create unique constraint
+                            query = f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE"
+                        else:
+                            # Create regular index
+                            query = f"CREATE INDEX ON :{label}({prop})"
+                        
+                        print(f"  Creating: {query}")
+                        result = self.graph.query(query)
+                        created_count += 1
+                        
+                    except Exception as e:
+                        error_msg = str(e).lower()
+                        if 'already exists' in error_msg or 'equivalent' in error_msg:
+                            print(f"  ⚠️ Index on {label}.{prop} already exists, skipping")
+                        else:
+                            print(f"  ❌ Error creating index on {label}.{prop}: {e}")
+        
+        print(f"✅ Created {created_count} indexes, skipped {skipped_count}")
+    
+    def create_constraints_from_csv(self):
+        """Create constraints from constraints.csv file"""
+        constraints_file = os.path.join(self.csv_dir, 'constraints.csv')
+        if not os.path.exists(constraints_file):
+            print("⚠️ No constraints.csv file found, skipping constraint creation")
+            return
+        
+        print("🔒 Creating constraints...")
+        constraints = self.read_csv_file(constraints_file)
+        
+        if not constraints:
+            print("  No constraints to create")
+            return
+        
+        created_count = 0
+        
+        for constraint in constraints:
+            labels = constraint.get('labels', '').strip()
+            properties = constraint.get('properties', '').strip()
+            constraint_type = constraint.get('type', '').upper()
+            
+            # Skip constraints without labels/properties
+            if not labels or not properties:
+                continue
+            
+            # Split labels and properties (in case there are multiple)
+            label_list = [l.strip() for l in labels.split(';') if l.strip()]
+            prop_list = [p.strip() for p in properties.split(';') if p.strip()]
+            
+            # Create constraint for each label-property combination
+            for label in label_list:
+                for prop in prop_list:
+                    try:
+                        if 'UNIQUE' in constraint_type:
+                            query = f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE"
+                        else:
+                            # FalkorDB may not support all constraint types, skip for now
+                            print(f"  ⚠️ Unsupported constraint type '{constraint_type}' for {label}.{prop}, skipping")
+                            continue
+                        
+                        print(f"  Creating: {query}")
+                        result = self.graph.query(query)
+                        created_count += 1
+                        
+                    except Exception as e:
+                        error_msg = str(e).lower()
+                        if 'already exists' in error_msg or 'equivalent' in error_msg:
+                            print(f"  ⚠️ Constraint on {label}.{prop} already exists, skipping")
+                        else:
+                            print(f"  ❌ Error creating constraint on {label}.{prop}: {e}")
+        
+        print(f"✅ Created {created_count} constraints")
+    
     def load_nodes_batch(self, file_path: str, batch_size: int = 1000):
         """Load nodes from CSV file in batches"""
         print(f"Loading nodes from {file_path}...")
@@ -106,12 +211,18 @@ class FalkorDBCSVLoader:
                         prop_parts.append(f"{k}: {repr(v)}")
                 prop_str = ', '.join(prop_parts)
                 
+                # Smart ID handling: quote if not a pure number
+                if node_id.isdigit():
+                    id_str = node_id  # Numeric ID, no quotes needed
+                else:
+                    id_str = f"'{node_id}'"  # String ID, needs quotes
+                
                 # Debug: show properties for first few records
                 if i == 0 and j < 3:
                     print(f"    Record {j+1}: properties = {properties}")
-                    print(f"    Generated query: CREATE (:{label} {{id: {node_id}{', ' + prop_str if prop_str else ''}}})")
+                    print(f"    Generated query: CREATE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")
                 
-                query_parts.append(f"CREATE (:{label} {{id: {node_id}{', ' + prop_str if prop_str else ''}}})")            
+                query_parts.append(f"CREATE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")            
             # Execute each node query individually
             for query in query_parts:
                 try:
@@ -169,9 +280,13 @@ class FalkorDBCSVLoader:
                 # Build property string
                 prop_str = ', '.join([f"{k}: {repr(v)}" for k, v in properties.items()])
                 
+                # Smart ID handling for both source and target
+                source_id_str = source_id if source_id.isdigit() else f"'{source_id}'"
+                target_id_str = target_id if target_id.isdigit() else f"'{target_id}'"
+                
                 query_parts.append(
-                    f"MATCH (a {{id: {source_id}}}), (b {{id: {target_id}}}) "
-                    f"CREATE (a)-[:{rel_type}{' {' + prop_str + '}' if prop_str else ''}]->(b)"
+                    f"MATCH (a {{id: {source_id_str}}}), (b {{id: {target_id_str}}}) "
+                    f"CREATE (a)-[:{rel_type}{' {' + prop_str + '}' if prop_str else ''}]-\u003e(b)"
                 )
             
             # Execute each relationship query individually to avoid WITH clause issues
@@ -200,6 +315,11 @@ class FalkorDBCSVLoader:
         
         print(f"Found {len(node_files)} node files and {len(edge_files)} edge files")
         
+        # Create indexes and constraints first (for better performance)
+        print("\n🗂️ Setting up database schema...")
+        self.create_indexes_from_csv()
+        self.create_constraints_from_csv()
+        
         # Load nodes first
         print("\n📥 Loading nodes...")
         for node_file in node_files:
@@ -213,6 +333,33 @@ class FalkorDBCSVLoader:
             self.load_edges_batch(file_path, batch_size)
         
         print(f"\n✅ Successfully loaded data into graph '{self.graph_name}'")
+    
+    def load_data_only(self, batch_size: int = 1000):
+        """Load only data from CSV files, skip index creation"""
+        if not os.path.exists(self.csv_dir):
+            print(f"❌ Directory {self.csv_dir} does not exist")
+            return
+        
+        csv_files = os.listdir(self.csv_dir)
+        node_files = [f for f in csv_files if f.startswith('nodes_') and f.endswith('.csv')]
+        edge_files = [f for f in csv_files if f.startswith('edges_') and f.endswith('.csv')]
+        
+        print(f"Found {len(node_files)} node files and {len(edge_files)} edge files")
+        print("⚠️ Skipping index creation as requested")
+        
+        # Load nodes first
+        print("\n📥 Loading nodes...")
+        for node_file in node_files:
+            file_path = os.path.join(self.csv_dir, node_file)
+            self.load_nodes_batch(file_path, batch_size)
+        
+        # Then load edges
+        print("\n🔗 Loading edges...")
+        for edge_file in edge_files:
+            file_path = os.path.join(self.csv_dir, edge_file)
+            self.load_edges_batch(file_path, batch_size)
+        
+        print(f"\n✅ Successfully loaded data into graph '{self.graph_name}' (without indexes)")
     
     def verify_node_attributes(self, label: str = "Person", limit: int = 5):
         """Verify what attributes were loaded for a specific node type"""
@@ -265,6 +412,8 @@ def main():
     parser.add_argument('--password', help='FalkorDB password (optional)')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for loading')
     parser.add_argument('--stats', action='store_true', help='Show graph statistics after loading')
+    parser.add_argument('--skip-indexes', action='store_true', help='Skip index and constraint creation')
+    parser.add_argument('--indexes-only', action='store_true', help='Only create indexes and constraints, skip data loading')
     
     args = parser.parse_args()
     
@@ -277,9 +426,19 @@ def main():
     )
     
     try:
-        loader.load_all_csvs(args.batch_size)
+        if args.indexes_only:
+            # Only create indexes and constraints
+            print("🗂️ Creating indexes and constraints only...")
+            loader.create_indexes_from_csv()
+            loader.create_constraints_from_csv()
+        elif args.skip_indexes:
+            # Load data without creating indexes
+            loader.load_data_only(args.batch_size)
+        else:
+            # Default: load everything
+            loader.load_all_csvs(args.batch_size)
         
-        if args.stats:
+        if args.stats and not args.indexes_only:
             loader.get_graph_stats()
             loader.verify_node_attributes("Person", 3)
             
