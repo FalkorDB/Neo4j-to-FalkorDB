@@ -17,7 +17,7 @@ The configuration file migrate_config.json allows you to modify how the labels a
 In order to extract the ontology (for a dataset which is not the movies sample dataset),\
 you may generate a template config file using this command:
 ```bash
-python3 neo4j_to_csv_extractor.py --password <your-password> --generate-template <your-template>.json --analyze-only
+python3 neo4j_to_csv_extractor.py --password <your-neo4j-password> --generate-template <your-template>.json --analyze-only
 ```
 
 Sample output of the ontology extraction phase is shown below as executed against the movies dataset
@@ -73,7 +73,7 @@ Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...\
 ## Step 4: Extracting data from neo4j and generating csv files
 To extract data from neo4j you can activate the relevant python script:
 ```bash
-python3 neo4j_to_csv_extractor.py --password <your-password> --config migrate_config.json
+python3 neo4j_to_csv_extractor.py --password <your-neo4j-password> --config migrate_config.json
 ```
 The script would read data from neo4j and create in csv_output subfolder all nodes and edges csv files
 with headers and content adapted based on guidelines in the migrate_config.json file
