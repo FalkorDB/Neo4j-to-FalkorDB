@@ -120,6 +120,7 @@ class FalkorDBCSVLoader:
             return
         
         created_count = 0
+        skipped_count = 0
         
         for constraint in constraints:
             labels = constraint.get('labels', '').strip()
@@ -128,6 +129,7 @@ class FalkorDBCSVLoader:
             
             # Skip constraints without labels/properties
             if not labels or not properties:
+                skipped_count += 1
                 continue
             
             # Split labels and properties (in case there are multiple)
@@ -137,26 +139,48 @@ class FalkorDBCSVLoader:
             # Create constraint for each label-property combination
             for label in label_list:
                 for prop in prop_list:
-                    try:
-                        if 'UNIQUE' in constraint_type:
-                            query = f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE"
-                        else:
-                            # FalkorDB may not support all constraint types, skip for now
-                            print(f"  ⚠️ Unsupported constraint type '{constraint_type}' for {label}.{prop}, skipping")
-                            continue
+                    if 'UNIQUE' in constraint_type:
+                        # For UNIQUE constraints, try different syntax approaches
+                        success = False
                         
-                        print(f"  Creating: {query}")
-                        result = self.graph.query(query)
-                        created_count += 1
+                        # Try modern Cypher syntax first
+                        try:
+                            query = f"CREATE CONSTRAINT FOR (n:{label}) REQUIRE n.{prop} IS UNIQUE"
+                            print(f"  Trying: {query}")
+                            result = self.graph.query(query)
+                            created_count += 1
+                            success = True
+                        except Exception as e1:
+                            # Try Neo4j-style syntax  
+                            try:
+                                query = f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE"
+                                print(f"  Trying: {query}")
+                                result = self.graph.query(query)
+                                created_count += 1
+                                success = True
+                            except Exception as e2:
+                                # Try FalkorDB Redis command style
+                                try:
+                                    result = self.db.execute_command('GRAPH.CONSTRAINT', self.graph_name, 'CREATE', 'UNIQUE', label, prop)
+                                    print(f"  Created constraint via Redis command: {label}.{prop}")
+                                    created_count += 1
+                                    success = True
+                                except Exception as e3:
+                                    print(f"  ⚠️ FalkorDB may not support unique constraints yet. Skipping {label}.{prop}")
+                                    print(f"    Tried multiple approaches: {str(e1)[:100]}...")
+                                    skipped_count += 1
                         
-                    except Exception as e:
-                        error_msg = str(e).lower()
-                        if 'already exists' in error_msg or 'equivalent' in error_msg:
-                            print(f"  ⚠️ Constraint on {label}.{prop} already exists, skipping")
-                        else:
-                            print(f"  ❌ Error creating constraint on {label}.{prop}: {e}")
+                        if success:
+                            print(f"  ✅ Created unique constraint on {label}.{prop}")
+                    else:
+                        # Non-unique constraint types are not commonly supported
+                        print(f"  ⚠️ Constraint type '{constraint_type}' not supported, skipping {label}.{prop}")
+                        skipped_count += 1
         
-        print(f"✅ Created {created_count} constraints")
+        if created_count > 0:
+            print(f"✅ Created {created_count} constraints")
+        if skipped_count > 0:
+            print(f"⚠️ Skipped {skipped_count} constraints (not supported in current FalkorDB version)")
     
     def load_nodes_batch(self, file_path: str, batch_size: int = 1000):
         """Load nodes from CSV file in batches"""
