@@ -15,13 +15,15 @@ from falkordb import FalkorDB
 
 
 class FalkorDBCSVLoader:
-    def __init__(self, host: str = "localhost", port: int = 6379, graph_name: str = "graph"):
+    def __init__(self, host: str = "localhost", port: int = 6379, graph_name: str = "graph", username: str = None, password: str = None):
         """
         Initialize FalkorDB connection
         
         :param host: FalkorDB host
         :param port: FalkorDB port  
         :param graph_name: Target graph name
+        :param username: FalkorDB username (optional)
+        :param password: FalkorDB password (optional)
         """
         self.host = host
         self.port = port
@@ -30,7 +32,7 @@ class FalkorDBCSVLoader:
         
         try:
             print(f"Connecting to FalkorDB at {host}:{port}...")
-            self.db = FalkorDB(host=host, port=port)
+            self.db = FalkorDB(host=host, port=port, username=username, password=password)
             self.graph = self.db.select_graph(graph_name)
             print(f"✅ Connected to FalkorDB graph '{graph_name}'")
         except Exception as e:
@@ -259,6 +261,8 @@ def main():
     parser.add_argument('graph_name', help='Target graph name in FalkorDB')
     parser.add_argument('--host', default='localhost', help='FalkorDB host')
     parser.add_argument('--port', type=int, default=6379, help='FalkorDB port')
+    parser.add_argument('--username', help='FalkorDB username (optional)')
+    parser.add_argument('--password', help='FalkorDB password (optional)')
     parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for loading')
     parser.add_argument('--stats', action='store_true', help='Show graph statistics after loading')
     
@@ -267,7 +271,9 @@ def main():
     loader = FalkorDBCSVLoader(
         host=args.host,
         port=args.port,
-        graph_name=args.graph_name
+        graph_name=args.graph_name,
+        username=args.username,
+        password=args.password
     )
     
     try:
