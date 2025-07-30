@@ -249,6 +249,8 @@ class Neo4jToCSVExtractor:
         print("Extracting database indexes...")
         
         indexes = self.get_indexes()
+        # Apply property mappings to indexes
+        indexes = self._translate_index_properties(indexes)
         csv_filename = os.path.join(self.output_dir, "indexes.csv")
         
         with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
@@ -289,6 +291,8 @@ class Neo4jToCSVExtractor:
         print("Extracting database constraints...")
         
         constraints = self.get_constraints()
+        # Apply property mappings to constraints
+        constraints = self._translate_constraint_properties(constraints)
         csv_filename = os.path.join(self.output_dir, "constraints.csv")
         
         with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
@@ -319,7 +323,70 @@ class Neo4jToCSVExtractor:
         
         print(f"  Exported {len(constraints)} constraints to {csv_filename}")
         return csv_filename
+
+    def _translate_constraint_properties(self, constraints: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Translate constraint properties based on the configuration."""
+        
+        translated_constraints = []
+        
+        for constraint in constraints:
+            translated_constraint = constraint.copy()
+            labels = translated_constraint.get('labels', [])
+            properties = translated_constraint.get('properties', [])
+            
+            if not labels or not properties:
+                translated_constraints.append(translated_constraint)
+                continue
+
+            # Assuming single label for simplicity; adjust if constraints can have multiple labels
+            label = labels[0]
+            
+            # Get property mappings for this label
+            property_mappings = self.config.get('property_mappings', {}).get(label, {})
+            
+            if not property_mappings:
+                translated_constraints.append(translated_constraint)
+                continue
+
+            # Translate properties
+            translated_properties = [property_mappings.get(prop, prop) for prop in properties]
+            translated_constraint['properties'] = translated_properties
+            translated_constraints.append(translated_constraint)
+            
+        return translated_constraints
     
+
+    def _translate_index_properties(self, indexes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Translate index properties based on the configuration."""
+        
+        translated_indexes = []
+        
+        for index in indexes:
+            translated_index = index.copy()
+            labels = translated_index.get('labels', [])
+            properties = translated_index.get('properties', [])
+            
+            if not labels or not properties:
+                translated_indexes.append(translated_index)
+                continue
+
+            # Assuming single label for simplicity; adjust if indexes can have multiple labels
+            label = labels[0]
+            
+            # Get property mappings for this label
+            property_mappings = self.config.get('property_mappings', {}).get(label, {})
+            
+            if not property_mappings:
+                translated_indexes.append(translated_index)
+                continue
+
+            # Translate properties
+            translated_properties = [property_mappings.get(prop, prop) for prop in properties]
+            translated_index['properties'] = translated_properties
+            translated_indexes.append(translated_index)
+            
+        return translated_indexes
+        
     def generate_falkordb_index_script(self, index_file: str, constraint_file: str) -> str:
         """Generate FalkorDB index creation script"""
         script_filename = os.path.join(self.output_dir, "create_indexes_falkordb.cypher")

@@ -54,7 +54,7 @@ class FalkorDBCSVLoader:
             return []
     
     def create_indexes_from_csv(self):
-        """Create indexes from indexes.csv file"""
+        """Create indexes from indexes.csv file, but skip unique constraints"""
         indexes_file = os.path.join(self.csv_dir, 'indexes.csv')
         if not os.path.exists(indexes_file):
             print("⚠️ No indexes.csv file found, skipping index creation")
@@ -72,8 +72,8 @@ class FalkorDBCSVLoader:
             uniqueness = index.get('uniqueness', 'NON_UNIQUE')
             index_type = index.get('type', '').upper()
             
-            # Skip system indexes and indexes without labels/properties
-            if not labels or not properties or index_type == 'LOOKUP':
+            # Skip system indexes, unique constraints, and indexes without labels/properties
+            if not labels or not properties or index_type == 'LOOKUP' or uniqueness == 'UNIQUE':
                 skipped_count += 1
                 continue
             
@@ -85,13 +85,8 @@ class FalkorDBCSVLoader:
             for label in label_list:
                 for prop in prop_list:
                     try:
-                        if uniqueness == 'UNIQUE':
-                            # Create unique constraint
-                            query = f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE"
-                        else:
-                            # Create regular index
-                            query = f"CREATE INDEX ON :{label}({prop})"
-                        
+                        # Create regular index
+                        query = f"CREATE INDEX ON :{label}({prop})"
                         print(f"  Creating: {query}")
                         result = self.graph.query(query)
                         created_count += 1
@@ -104,6 +99,57 @@ class FalkorDBCSVLoader:
                             print(f"  ❌ Error creating index on {label}.{prop}: {e}")
         
         print(f"✅ Created {created_count} indexes, skipped {skipped_count}")
+    
+    def create_supporting_indexes_for_constraints(self):
+        """Create supporting indexes required for unique constraints"""
+        constraints_file = os.path.join(self.csv_dir, 'constraints.csv')
+        if not os.path.exists(constraints_file):
+            return
+        
+        print("🔧 Creating supporting indexes for constraints...")
+        constraints = self.read_csv_file(constraints_file)
+        
+        if not constraints:
+            return
+        
+        created_count = 0
+        
+        for constraint in constraints:
+            labels = constraint.get('labels', '').strip()
+            properties = constraint.get('properties', '').strip()
+            constraint_type = constraint.get('type', '').upper()
+            
+            # Only create indexes for UNIQUE constraints
+            if not labels or not properties or 'UNIQUE' not in constraint_type:
+                continue
+            
+            # Split labels and properties
+            label_list = [l.strip() for l in labels.split(';') if l.strip()]
+            prop_list = [p.strip() for p in properties.split(';') if p.strip()]
+            
+            # Create supporting index for each label
+            for label in label_list:
+                try:
+                    # Create index with all properties required for the constraint
+                    if len(prop_list) == 1:
+                        query = f"CREATE INDEX FOR (n:{label}) ON (n.{prop_list[0]})"
+                    else:
+                        prop_str = ', '.join([f'n.{prop}' for prop in prop_list])
+                        query = f"CREATE INDEX FOR (n:{label}) ON ({prop_str})"
+                    
+                    print(f"  Creating supporting index: {query}")
+                    result = self.graph.query(query)
+                    created_count += 1
+                    
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if 'already indexed' in error_msg or 'already exists' in error_msg or 'equivalent' in error_msg:
+                        print(f"  ⚠️ Supporting index for {label}({', '.join(prop_list)}) already exists")
+                    else:
+                        print(f"  ❌ Error creating supporting index for {label}({', '.join(prop_list)}): {e}")
+        
+        if created_count > 0:
+            print(f"✅ Created {created_count} supporting indexes")
     
     def create_constraints_from_csv(self):
         """Create constraints from constraints.csv file"""
@@ -126,7 +172,8 @@ class FalkorDBCSVLoader:
             labels = constraint.get('labels', '').strip()
             properties = constraint.get('properties', '').strip()
             constraint_type = constraint.get('type', '').upper()
-            
+            entity_type = constraint.get('entity_type', 'NODE').upper()
+
             # Skip constraints without labels/properties
             if not labels or not properties:
                 skipped_count += 1
@@ -138,49 +185,35 @@ class FalkorDBCSVLoader:
             
             # Create constraint for each label-property combination
             for label in label_list:
-                for prop in prop_list:
+                # FalkorDB's create_constraint function expects a list of properties
+                try:
                     if 'UNIQUE' in constraint_type:
-                        # For UNIQUE constraints, try different syntax approaches
-                        success = False
+                        # Create unique constraint using Redis command
+                        # GRAPH.CONSTRAINT CREATE key UNIQUE NODE label PROPERTIES propCount prop [prop...]
+                        command_args = [
+                            'GRAPH.CONSTRAINT', 'CREATE', self.graph_name, 'UNIQUE', 
+                            entity_type, label, 'PROPERTIES', str(len(prop_list))
+                        ] + prop_list
                         
-                        # Try modern Cypher syntax first
-                        try:
-                            query = f"CREATE CONSTRAINT FOR (n:{label}) REQUIRE n.{prop} IS UNIQUE"
-                            print(f"  Trying: {query}")
-                            result = self.graph.query(query)
-                            created_count += 1
-                            success = True
-                        except Exception as e1:
-                            # Try Neo4j-style syntax  
-                            try:
-                                query = f"CREATE CONSTRAINT ON (n:{label}) ASSERT n.{prop} IS UNIQUE"
-                                print(f"  Trying: {query}")
-                                result = self.graph.query(query)
-                                created_count += 1
-                                success = True
-                            except Exception as e2:
-                                # Try FalkorDB Redis command style
-                                try:
-                                    result = self.db.execute_command('GRAPH.CONSTRAINT', self.graph_name, 'CREATE', 'UNIQUE', label, prop)
-                                    print(f"  Created constraint via Redis command: {label}.{prop}")
-                                    created_count += 1
-                                    success = True
-                                except Exception as e3:
-                                    print(f"  ⚠️ FalkorDB may not support unique constraints yet. Skipping {label}.{prop}")
-                                    print(f"    Tried multiple approaches: {str(e1)[:100]}...")
-                                    skipped_count += 1
-                        
-                        if success:
-                            print(f"  ✅ Created unique constraint on {label}.{prop}")
+                        result = self.db.execute_command(*command_args)
+                        created_count += 1
+                        print(f"  ✅ Successfully created UNIQUE constraint on {label}({', '.join(prop_list)}), status: {result}")
                     else:
-                        # Non-unique constraint types are not commonly supported
-                        print(f"  ⚠️ Constraint type '{constraint_type}' not supported, skipping {label}.{prop}")
+                        # Handle other constraint types if necessary (e.g., MANDATORY)
+                        print(f"  ⚠️ Constraint type '{constraint_type}' not supported by this loader, skipping {label}.{prop_list}")
+                        skipped_count += 1
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if 'already exists' in error_msg or 'constraint already exists' in error_msg:
+                        print(f"  ⚠️ Constraint on {label}({', '.join(prop_list)}) already exists, skipping")
+                    else:
+                        print(f"  ❌ Error creating constraint on {label}({', '.join(prop_list)}): {e}")
                         skipped_count += 1
         
         if created_count > 0:
             print(f"✅ Created {created_count} constraints")
         if skipped_count > 0:
-            print(f"⚠️ Skipped {skipped_count} constraints (not supported in current FalkorDB version)")
+            print(f"⚠️ Skipped {skipped_count} constraints")
     
     def load_nodes_batch(self, file_path: str, batch_size: int = 1000):
         """Load nodes from CSV file in batches"""
@@ -340,8 +373,9 @@ class FalkorDBCSVLoader:
         print(f"Found {len(node_files)} node files and {len(edge_files)} edge files")
         
         # Create indexes and constraints first (for better performance)
-        print("\n🗂️ Setting up database schema...")
+        print("\n🗼️ Setting up database schema...")
         self.create_indexes_from_csv()
+        self.create_supporting_indexes_for_constraints()
         self.create_constraints_from_csv()
         
         # Load nodes first
@@ -421,6 +455,7 @@ class FalkorDBCSVLoader:
         except Exception as e:
             print(f"❌ Error getting graph statistics: {e}")
     
+
     def close(self):
         """Close the database connection"""
         # FalkorDB doesn't require explicit closing
@@ -438,7 +473,6 @@ def main():
     parser.add_argument('--stats', action='store_true', help='Show graph statistics after loading')
     parser.add_argument('--skip-indexes', action='store_true', help='Skip index and constraint creation')
     parser.add_argument('--indexes-only', action='store_true', help='Only create indexes and constraints, skip data loading')
-    
     args = parser.parse_args()
     
     loader = FalkorDBCSVLoader(
@@ -452,8 +486,9 @@ def main():
     try:
         if args.indexes_only:
             # Only create indexes and constraints
-            print("🗂️ Creating indexes and constraints only...")
+            print("🗼️ Creating indexes and constraints only...")
             loader.create_indexes_from_csv()
+            loader.create_supporting_indexes_for_constraints()
             loader.create_constraints_from_csv()
         elif args.skip_indexes:
             # Load data without creating indexes
