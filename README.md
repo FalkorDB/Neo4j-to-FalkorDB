@@ -207,23 +207,23 @@ Connecting to FalkorDB at localhost:6379...
 ✅ Connected to FalkorDB graph 'MOVIES'
 Found 2 node files and 6 edge files
 
-🗂️ Setting up database schema...
+🗼️ Setting up database schema...
 🔧 Creating indexes...
   Read 4 rows from csv_output/indexes.csv
-  Creating: CREATE INDEX ON :Movie(title)
+  Creating: CREATE INDEX ON :Movie(name)
   Creating: CREATE INDEX ON :Person(name)
 ✅ Created 2 indexes, skipped 2
+🔧 Creating supporting indexes for constraints...
+  Read 2 rows from csv_output/constraints.csv
+  Creating supporting index: CREATE INDEX FOR (n:Movie) ON (n.name)
+  ⚠️ Supporting index for Movie(name) already exists
+  Creating supporting index: CREATE INDEX FOR (n:Person) ON (n.name)
+  ⚠️ Supporting index for Person(name) already exists
 🔒 Creating constraints...
   Read 2 rows from csv_output/constraints.csv
-  Trying: CREATE CONSTRAINT FOR (n:Movie) REQUIRE n.title IS UNIQUE
-  Trying: CREATE CONSTRAINT ON (n:Movie) ASSERT n.title IS UNIQUE
-  ⚠️ FalkorDB may not support unique constraints yet. Skipping Movie.title
-    Tried multiple approaches: errMsg: Invalid input 'F': expected '=' or CREATE CONSTRAINT ON line: 1, column: 19, offset: 18 errC...
-  Trying: CREATE CONSTRAINT FOR (n:Person) REQUIRE n.name IS UNIQUE
-  Trying: CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE
-  ⚠️ FalkorDB may not support unique constraints yet. Skipping Person.name
-    Tried multiple approaches: errMsg: Invalid input 'F': expected '=' or CREATE CONSTRAINT ON line: 1, column: 19, offset: 18 errC...
-⚠️ Skipped 2 constraints (not supported in current FalkorDB version)
+  ✅ Successfully created UNIQUE constraint on Movie(name), status: PENDING
+  ✅ Successfully created UNIQUE constraint on Person(name), status: PENDING
+✅ Created 2 constraints
 
 📥 Loading nodes...
 Loading nodes from csv_output/nodes_movie.csv...
@@ -275,24 +275,8 @@ Loading edges from csv_output/edges_directed.csv...
   Loaded 44/44 edges...
 ✅ Loaded 44 DIRECTED relationships
 
-✅ Successfully loaded data into graph 'MOV4'
+✅ Successfully loaded data into graph 'MV7'
 
-📊 Graph Statistics:
-Nodes:
-  ['Movie']: 38
-  ['Person']: 133
-Relationships:
-  PRODUCED: 15
-  REVIEWED: 9
-  DIRECTED: 44
-  WROTE: 10
-  ACTED_IN: 172
-  FOLLOWS: 3
-
-🔍 Sample Person nodes with their attributes:
-  Node 1: (:Person{birth_year:1964,id:1,name:"Keanu Reeves"})
-  Node 2: (:Person{birth_year:1967,id:2,name:"Carrie-Anne Moss"})
-  Node 3: (:Person{birth_year:1961,id:3,name:"Laurence Fishburne"})
 
 ```
 ---------
