@@ -53,6 +53,42 @@ class FalkorDBCSVLoader:
             print(f"❌ Error reading {file_path}: {e}")
             return []
     
+    def create_id_indexes_for_all_labels(self):
+        """Create index on 'id' property for each node label found in CSV files"""
+        if not os.path.exists(self.csv_dir):
+            return
+        
+        print("🔧 Creating ID indexes for all node labels...")
+        
+        # Find all node CSV files to determine labels
+        csv_files = os.listdir(self.csv_dir)
+        node_files = [f for f in csv_files if f.startswith('nodes_') and f.endswith('.csv')]
+        
+        created_count = 0
+        
+        for node_file in node_files:
+            # Extract label from filename (e.g., nodes_person.csv -> Person)
+            label = node_file.replace('nodes_', '').replace('.csv', '').title()
+            
+            try:
+                # Create index on id property for this label
+                query = f"CREATE INDEX ON :{label}(id)"
+                print(f"  Creating ID index: {query}")
+                result = self.graph.query(query)
+                created_count += 1
+                
+            except Exception as e:
+                error_msg = str(e).lower()
+                if 'already exists' in error_msg or 'equivalent' in error_msg:
+                    print(f"  ⚠️ ID index on {label}.id already exists, skipping")
+                else:
+                    print(f"  ❌ Error creating ID index on {label}.id: {e}")
+        
+        if created_count > 0:
+            print(f"✅ Created {created_count} ID indexes")
+        else:
+            print("  No new ID indexes created")
+    
     def create_indexes_from_csv(self):
         """Create indexes from indexes.csv file, but skip unique constraints"""
         indexes_file = os.path.join(self.csv_dir, 'indexes.csv')
@@ -60,7 +96,7 @@ class FalkorDBCSVLoader:
             print("⚠️ No indexes.csv file found, skipping index creation")
             return
         
-        print("🔧 Creating indexes...")
+        print("🔧 Creating indexes from CSV...")
         indexes = self.read_csv_file(indexes_file)
         
         created_count = 0
@@ -98,7 +134,7 @@ class FalkorDBCSVLoader:
                         else:
                             print(f"  ❌ Error creating index on {label}.{prop}: {e}")
         
-        print(f"✅ Created {created_count} indexes, skipped {skipped_count}")
+        print(f"✅ Created {created_count} indexes from CSV, skipped {skipped_count}")
     
     def create_supporting_indexes_for_constraints(self):
         """Create supporting indexes required for unique constraints"""
@@ -323,9 +359,13 @@ class FalkorDBCSVLoader:
                 
                 properties = {}
                 
-                # Add all properties except source, target, type
+                # Get source and target labels if available
+                source_label = row.get('source_label', '').strip()
+                target_label = row.get('target_label', '').strip()
+                
+                # Add all properties except source, target, type, source_label, target_label
                 for key, value in row.items():
-                    if key not in ['source', 'target', 'type'] and value:
+                    if key not in ['source', 'target', 'type', 'source_label', 'target_label'] and value:
                         # Try to convert to appropriate type
                         if value.isdigit():
                             properties[key] = int(value)
@@ -341,8 +381,25 @@ class FalkorDBCSVLoader:
                 source_id_str = source_id if source_id.isdigit() else f"'{source_id}'"
                 target_id_str = target_id if target_id.isdigit() else f"'{target_id}'"
                 
+                # Build MATCH clause with labels if available
+                if source_label and target_label:
+                    # Use specific labels for more efficient matching
+                    # Handle multiple labels by taking the first one
+                    source_label_first = source_label.split(':')[0] if ':' in source_label else source_label
+                    target_label_first = target_label.split(':')[0] if ':' in target_label else target_label
+                    
+                    match_clause = f"MATCH (a:{source_label_first} {{id: {source_id_str}}}), (b:{target_label_first} {{id: {target_id_str}}})"
+                else:
+                    # Fallback to generic matching without labels
+                    match_clause = f"MATCH (a {{id: {source_id_str}}}), (b {{id: {target_id_str}}})"
+                
+                # Debug: show label usage for first few records
+                if i == 0 and j < 3:
+                    print(f"    Record {j+1}: source_label={source_label}, target_label={target_label}")
+                    print(f"    Generated query: {match_clause} CREATE (a)-[:{rel_type}]->(b)")
+                
                 query_parts.append(
-                    f"MATCH (a {{id: {source_id_str}}}), (b {{id: {target_id_str}}}) "
+                    f"{match_clause} "
                     f"CREATE (a)-[:{rel_type}{' {' + prop_str + '}' if prop_str else ''}]-\u003e(b)"
                 )
             
@@ -374,6 +431,7 @@ class FalkorDBCSVLoader:
         
         # Create indexes and constraints first (for better performance)
         print("\n🗼️ Setting up database schema...")
+        self.create_id_indexes_for_all_labels()  # Create ID indexes first for better performance
         self.create_indexes_from_csv()
         self.create_supporting_indexes_for_constraints()
         self.create_constraints_from_csv()
@@ -487,6 +545,7 @@ def main():
         if args.indexes_only:
             # Only create indexes and constraints
             print("🗼️ Creating indexes and constraints only...")
+            loader.create_id_indexes_for_all_labels()
             loader.create_indexes_from_csv()
             loader.create_supporting_indexes_for_constraints()
             loader.create_constraints_from_csv()

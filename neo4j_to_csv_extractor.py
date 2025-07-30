@@ -606,7 +606,7 @@ class Neo4jToCSVExtractor:
                 mapped_properties.append(mapped_prop)
             
             # CSV headers: source, target, type, and all mapped properties
-            headers = ['source', 'target', 'type'] + mapped_properties
+            headers = ['source', 'source_label', 'target', 'target_label', 'type'] + mapped_properties
             writer = csv.DictWriter(csvfile, fieldnames=headers)
             writer.writeheader()
             
@@ -618,7 +618,7 @@ class Neo4jToCSVExtractor:
                 while True:
                     query = f"""
                     MATCH (a)-[r:{rel_type}]->(b)
-                    RETURN id(a) as source_id, id(b) as target_id, type(r) as rel_type, r
+                    RETURN id(a) as source_id, labels(a) as source_label, id(b) as target_id, labels(b) as target_label, type(r) as rel_type, r
                     SKIP {skip} LIMIT {batch_size}
                     """
                     
@@ -632,7 +632,9 @@ class Neo4jToCSVExtractor:
                         rel_data = dict(record['r'])
                         row = {
                             'source': record['source_id'],
+                            'source_label': ':'.join(record['source_label']),
                             'target': record['target_id'],
+                            'target_label': ':'.join(record['target_label']),
                             'type': record['rel_type']
                         }
                         
@@ -695,7 +697,40 @@ REMOVE n.id, n.labels;
             f.write("// Load Relationships\n")
             for edge_file in edge_files:
                 rel_type = os.path.basename(edge_file).replace('edges_', '').replace('.csv', '').upper()
-                f.write(f"""
+                
+                # Read the first row of the CSV to get label information
+                try:
+                    with open(edge_file, 'r', encoding='utf-8') as csvfile:
+                        reader = csv.DictReader(csvfile)
+                        first_row = next(reader, None)
+                        if first_row and 'source_label' in first_row and 'target_label' in first_row:
+                            source_label = first_row['source_label'].split(':')[0]  # Take first label if multiple
+                            target_label = first_row['target_label'].split(':')[0]  # Take first label if multiple
+                            
+                            f.write(f"""
+LOAD CSV WITH HEADERS FROM 'file:///{os.path.basename(edge_file)}' AS row
+MATCH (a:{source_label} {{id: toInteger(row.source)}})
+MATCH (b:{target_label} {{id: toInteger(row.target)}})
+MERGE (a)-[r:{rel_type}]->(b)
+SET r += row
+REMOVE r.source, r.source_label, r.target, r.target_label, r.type;
+
+""")
+                        else:
+                            # Fallback to generic approach without labels
+                            f.write(f"""
+LOAD CSV WITH HEADERS FROM 'file:///{os.path.basename(edge_file)}' AS row
+MATCH (a {{id: toInteger(row.source)}})
+MATCH (b {{id: toInteger(row.target)}})
+MERGE (a)-[r:{rel_type}]->(b)
+SET r += row
+REMOVE r.source, r.target, r.type;
+
+""")
+                except Exception as e:
+                    print(f"Warning: Could not read labels from {edge_file}: {e}")
+                    # Fallback to generic approach without labels
+                    f.write(f"""
 LOAD CSV WITH HEADERS FROM 'file:///{os.path.basename(edge_file)}' AS row
 MATCH (a {{id: toInteger(row.source)}})
 MATCH (b {{id: toInteger(row.target)}})
