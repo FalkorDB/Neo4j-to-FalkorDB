@@ -2,7 +2,8 @@
 
 Migrating graph database contents from one property graph solution to another is a common task.\
 In this example, we use stardard cypher queries to extract data from a sample graph example availble in neo4j namely "Movies",\
-allow transformation of labels and properties, and as a next step load the csv files one by one into falkor db.
+allow transformation of labels and properties, and as a next step load the csv files one by one into falkor db.\
+Please note that you can use any source neo4j dataset, and the process migrates nodes, edges, constraints and indexes.
 
 ## Step 1: Setting up neo4j 
 Follow neo4j documentation to setup a locally run neo4j database: 
