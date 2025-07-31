@@ -180,7 +180,10 @@ python3 falkordb_csv_loader_fixed.py MOVIES --port 6379 --stats
 ```
 Note: In case your FalkorDB connection is secured with username and password you can add them according to the syntax described below. You may also control the batch size used per loaded CSV file.
 ```bash
-usage: falkordb_csv_loader_fixed.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--batch-size BATCH_SIZE] [--stats] graph_name
+
+usage: falkordb_csv_loader_fixed.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--batch-size BATCH_SIZE] [--stats] [--skip-indexes]
+                                    [--indexes-only] [--csv-dir CSV_DIR] [--merge-mode]
+                                    graph_name
 
 Load CSV files into FalkorDB
 
@@ -196,6 +199,11 @@ options:
   --batch-size BATCH_SIZE
                         Batch size for loading
   --stats               Show graph statistics after loading
+  --skip-indexes        Skip index and constraint creation
+  --indexes-only        Only create indexes and constraints, skip data loading
+  --csv-dir CSV_DIR     Directory containing CSV files (default: csv_output)
+  --merge-mode          Use MERGE instead of CREATE for upsert behavior
+
 ```
 
 ---------
