@@ -15,20 +15,23 @@ from falkordb import FalkorDB
 
 
 class FalkorDBCSVLoader:
-    def __init__(self, host: str = "localhost", port: int = 6379, graph_name: str = "graph", username: str = None, password: str = None):
+    def __init__(self, host: str = "localhost", port: int = 6379, graph_name: str = "graph", csv_dir: str = "csv_output", username: str = None, password: str = None, merge_mode: bool = False):
         """
         Initialize FalkorDB connection
         
         :param host: FalkorDB host
         :param port: FalkorDB port  
         :param graph_name: Target graph name
+        :param csv_dir: Directory containing CSV files
         :param username: FalkorDB username (optional)
         :param password: FalkorDB password (optional)
+        :param merge_mode: If True, use MERGE instead of CREATE for upsert behavior
         """
         self.host = host
         self.port = port
         self.graph_name = graph_name
-        self.csv_dir = "csv_output"
+        self.csv_dir = csv_dir
+        self.merge_mode = merge_mode
         
         try:
             print(f"Connecting to FalkorDB at {host}:{port}...")
@@ -68,7 +71,9 @@ class FalkorDBCSVLoader:
         
         for node_file in node_files:
             # Extract label from filename (e.g., nodes_person.csv -> Person)
-            label = node_file.replace('nodes_', '').replace('.csv', '').title()
+            raw_label = node_file.replace('nodes_', '').replace('.csv', '')
+            # Sanitize label: replace colons and other invalid characters with underscores
+            label = raw_label.replace(':', '_').title()
             
             try:
                 # Create index on id property for this label
@@ -251,13 +256,15 @@ class FalkorDBCSVLoader:
         if skipped_count > 0:
             print(f"⚠️ Skipped {skipped_count} constraints")
     
-    def load_nodes_batch(self, file_path: str, batch_size: int = 1000):
+    def load_nodes_batch(self, file_path: str, batch_size: int = 5000):
         """Load nodes from CSV file in batches"""
         print(f"Loading nodes from {file_path}...")
         
         # Extract label from filename (e.g., nodes_person.csv -> Person)
         filename = os.path.basename(file_path)
-        label = filename.replace('nodes_', '').replace('.csv', '').title()
+        raw_label = filename.replace('nodes_', '').replace('.csv', '')
+        # Sanitize label: replace colons and other invalid characters with underscores
+        label = raw_label.replace(':', '_').title()
         
         rows = self.read_csv_file(file_path)
         if not rows:
@@ -313,9 +320,16 @@ class FalkorDBCSVLoader:
                 # Debug: show properties for first few records
                 if i == 0 and j < 3:
                     print(f"    Record {j+1}: properties = {properties}")
-                    print(f"    Generated query: CREATE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")
+                    if self.merge_mode:
+                        print(f"    Generated query: MERGE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")
+                    else:
+                        print(f"    Generated query: CREATE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")
                 
-                query_parts.append(f"CREATE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")            
+                # Use MERGE or CREATE based on merge_mode
+                if self.merge_mode:
+                    query_parts.append(f"MERGE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")            
+                else:
+                    query_parts.append(f"CREATE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")            
             # Execute each node query individually
             for query in query_parts:
                 try:
@@ -330,7 +344,7 @@ class FalkorDBCSVLoader:
         
         print(f"✅ Loaded {total_loaded} {label} nodes")
     
-    def load_edges_batch(self, file_path: str, batch_size: int = 1000):
+    def load_edges_batch(self, file_path: str, batch_size: int = 5000):
         """Load edges from CSV file in batches"""
         print(f"Loading edges from {file_path}...")
         
@@ -388,20 +402,46 @@ class FalkorDBCSVLoader:
                     source_label_first = source_label.split(':')[0] if ':' in source_label else source_label
                     target_label_first = target_label.split(':')[0] if ':' in target_label else target_label
                     
-                    match_clause = f"MATCH (a:{source_label_first} {{id: {source_id_str}}}), (b:{target_label_first} {{id: {target_id_str}}})"
+                    if self.merge_mode:
+                        # Use MERGE for upsert behavior - merge both nodes and relationship
+                        query_parts.append(
+                            f"MERGE (a:{source_label_first} {{id: {source_id_str}}}) "
+                            f"MERGE (b:{target_label_first} {{id: {target_id_str}}}) "
+                            f"MERGE (a)-[r:{rel_type}]->(b)"
+                            f"{' SET ' + ', '.join([f'r.{k} = {repr(v)}' for k, v in properties.items()]) if properties else ''}"
+                        )
+                    else:
+                        # Use MATCH + CREATE for original behavior
+                        match_clause = f"MATCH (a:{source_label_first} {{id: {source_id_str}}}), (b:{target_label_first} {{id: {target_id_str}}})"
+                        query_parts.append(
+                            f"{match_clause} "
+                            f"CREATE (a)-[:{rel_type}{' {' + prop_str + '}' if prop_str else ''}]->(b)"
+                        )
                 else:
                     # Fallback to generic matching without labels
-                    match_clause = f"MATCH (a {{id: {source_id_str}}}), (b {{id: {target_id_str}}})"
+                    if self.merge_mode:
+                        # Use MERGE for upsert behavior - merge both nodes and relationship
+                        query_parts.append(
+                            f"MERGE (a {{id: {source_id_str}}}) "
+                            f"MERGE (b {{id: {target_id_str}}}) "
+                            f"MERGE (a)-[r:{rel_type}]->(b)"
+                            f"{' SET ' + ', '.join([f'r.{k} = {repr(v)}' for k, v in properties.items()]) if properties else ''}"
+                        )
+                    else:
+                        # Use MATCH + CREATE for original behavior
+                        match_clause = f"MATCH (a {{id: {source_id_str}}}), (b {{id: {target_id_str}}})"
+                        query_parts.append(
+                            f"{match_clause} "
+                            f"CREATE (a)-[:{rel_type}{' {' + prop_str + '}' if prop_str else ''}]->(b)"
+                        )
                 
                 # Debug: show label usage for first few records
                 if i == 0 and j < 3:
                     print(f"    Record {j+1}: source_label={source_label}, target_label={target_label}")
-                    print(f"    Generated query: {match_clause} CREATE (a)-[:{rel_type}]->(b)")
-                
-                query_parts.append(
-                    f"{match_clause} "
-                    f"CREATE (a)-[:{rel_type}{' {' + prop_str + '}' if prop_str else ''}]-\u003e(b)"
-                )
+                    if self.merge_mode:
+                        print(f"    Using MERGE mode for relationships")
+                    else:
+                        print(f"    Using CREATE mode for relationships")
             
             # Execute each relationship query individually to avoid WITH clause issues
             for query in query_parts:
@@ -417,7 +457,7 @@ class FalkorDBCSVLoader:
         
         print(f"✅ Loaded {total_loaded} {rel_type} relationships")
     
-    def load_all_csvs(self, batch_size: int = 1000):
+    def load_all_csvs(self, batch_size: int = 5000):
         """Load all CSV files from the csv_output directory"""
         if not os.path.exists(self.csv_dir):
             print(f"❌ Directory {self.csv_dir} does not exist")
@@ -450,7 +490,7 @@ class FalkorDBCSVLoader:
         
         print(f"\n✅ Successfully loaded data into graph '{self.graph_name}'")
     
-    def load_data_only(self, batch_size: int = 1000):
+    def load_data_only(self, batch_size: int = 5000):
         """Load only data from CSV files, skip index creation"""
         if not os.path.exists(self.csv_dir):
             print(f"❌ Directory {self.csv_dir} does not exist")
@@ -527,18 +567,22 @@ def main():
     parser.add_argument('--port', type=int, default=6379, help='FalkorDB port')
     parser.add_argument('--username', help='FalkorDB username (optional)')
     parser.add_argument('--password', help='FalkorDB password (optional)')
-    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for loading')
+    parser.add_argument('--batch-size', type=int, default=5000, help='Batch size for loading')
     parser.add_argument('--stats', action='store_true', help='Show graph statistics after loading')
     parser.add_argument('--skip-indexes', action='store_true', help='Skip index and constraint creation')
     parser.add_argument('--indexes-only', action='store_true', help='Only create indexes and constraints, skip data loading')
+    parser.add_argument('--csv-dir', default='csv_output', help='Directory containing CSV files (default: csv_output)')
+    parser.add_argument('--merge-mode', action='store_true', help='Use MERGE instead of CREATE for upsert behavior')
     args = parser.parse_args()
     
     loader = FalkorDBCSVLoader(
         host=args.host,
         port=args.port,
         graph_name=args.graph_name,
+        csv_dir=args.csv_dir,
         username=args.username,
-        password=args.password
+        password=args.password,
+        merge_mode=args.merge_mode
     )
     
     try:
