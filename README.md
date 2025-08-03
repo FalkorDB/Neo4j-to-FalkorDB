@@ -177,14 +177,13 @@ or use standard deployment that includes the browser component:
 https://docs.falkordb.com/getting_started.html
 After setup you will have falkordb data conntection at port 6379 and web browser at port 3000
 ```bash
-python3 falkordb_csv_loader_fixed.py MOVIES --port 6379 --stats
+python3 falkordb_csv_loader.py MOVIES --port 6379 --stats
 ```
 Note: In case your FalkorDB connection is secured with username and password you can add them according to the syntax described below. You may also control the batch size used per loaded CSV file.
 ```bash
-
-usage: falkordb_csv_loader_fixed.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--batch-size BATCH_SIZE] [--stats] [--skip-indexes]
-                                    [--indexes-only] [--csv-dir CSV_DIR] [--merge-mode]
-                                    graph_name
+usage: falkordb_csv_loader.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--batch-size BATCH_SIZE] [--stats] [--csv-dir CSV_DIR]
+                              [--merge-mode]
+                              graph_name
 
 Load CSV files into FalkorDB
 
@@ -198,10 +197,8 @@ options:
   --username USERNAME   FalkorDB username (optional)
   --password PASSWORD   FalkorDB password (optional)
   --batch-size BATCH_SIZE
-                        Batch size for loading
+                        Batch size for loading (default: 5000)
   --stats               Show graph statistics after loading
-  --skip-indexes        Skip index and constraint creation
-  --indexes-only        Only create indexes and constraints, skip data loading
   --csv-dir CSV_DIR     Directory containing CSV files (default: csv_output)
   --merge-mode          Use MERGE instead of CREATE for upsert behavior
 
@@ -211,31 +208,32 @@ options:
 Execution output example
 ---------
 ```bash
-
 Connecting to FalkorDB at localhost:6379...
 ✅ Connected to FalkorDB graph 'MOVIES'
 Found 2 node files and 6 edge files
 
 🗼️ Setting up database schema...
-🔧 Creating indexes...
+🔧 Creating ID indexes for all node labels...
+  Creating ID index: CREATE INDEX ON :Movie(id)
+  Creating ID index: CREATE INDEX ON :Person(id)
+✅ Created 2 ID indexes
+🔧 Creating indexes from CSV...
   Read 4 rows from csv_output/indexes.csv
   Creating: CREATE INDEX ON :Movie(name)
   Creating: CREATE INDEX ON :Person(name)
-✅ Created 2 indexes, skipped 2
+✅ Created 2 indexes from CSV, skipped 2
 🔧 Creating supporting indexes for constraints...
   Read 2 rows from csv_output/constraints.csv
   Creating supporting index: CREATE INDEX FOR (n:Movie) ON (n.name)
-  ⚠️ Supporting index for Movie(name) already exists
   Creating supporting index: CREATE INDEX FOR (n:Person) ON (n.name)
-  ⚠️ Supporting index for Person(name) already exists
 🔒 Creating constraints...
   Read 2 rows from csv_output/constraints.csv
   ✅ Successfully created UNIQUE constraint on Movie(name), status: PENDING
   ✅ Successfully created UNIQUE constraint on Person(name), status: PENDING
 ✅ Created 2 constraints
 
-📥 Loading nodes...
-Loading nodes from csv_output/nodes_movie.csv...
+[2025-08-03 14:04:06] 📥 Loading nodes...
+[2025-08-03 14:04:06] Loading nodes from csv_output/nodes_movie.csv...
   Read 38 rows from csv_output/nodes_movie.csv
   CSV headers: ['id', 'labels', 'release_year', 'tagline', 'name']
     Record 1: properties = {'release_year': 1999, 'tagline': 'Welcome to the Real World', 'name': 'The Matrix'}
@@ -244,9 +242,9 @@ Loading nodes from csv_output/nodes_movie.csv...
     Generated query: CREATE (:Movie {id: 9, release_year: 2003, tagline: 'Free your mind', name: 'The Matrix Reloaded'})
     Record 3: properties = {'release_year': 2003, 'tagline': 'Everything that has a beginning has an end', 'name': 'The Matrix Revolutions'}
     Generated query: CREATE (:Movie {id: 10, release_year: 2003, tagline: 'Everything that has a beginning has an end', name: 'The Matrix Revolutions'})
-  Loaded 38/38 nodes...
-✅ Loaded 38 Movie nodes
-Loading nodes from csv_output/nodes_person.csv...
+[2025-08-03 14:04:06] Batch complete: Loaded 38 nodes (Duration: 0:00:00.012957)
+[2025-08-03 14:04:06] ✅ Loaded 38 Movie nodes (Duration: 0:00:00.013085)
+[2025-08-03 14:04:06] Loading nodes from csv_output/nodes_person.csv...
   Read 133 rows from csv_output/nodes_person.csv
   CSV headers: ['id', 'labels', 'birth_year', 'name']
     Record 1: properties = {'birth_year': 1964, 'name': 'Keanu Reeves'}
@@ -255,37 +253,91 @@ Loading nodes from csv_output/nodes_person.csv...
     Generated query: CREATE (:Person {id: 2, birth_year: 1967, name: 'Carrie-Anne Moss'})
     Record 3: properties = {'birth_year': 1961, 'name': 'Laurence Fishburne'}
     Generated query: CREATE (:Person {id: 3, birth_year: 1961, name: 'Laurence Fishburne'})
-  Loaded 133/133 nodes...
-✅ Loaded 133 Person nodes
+[2025-08-03 14:04:06] Batch complete: Loaded 133 nodes (Duration: 0:00:00.035237)
+[2025-08-03 14:04:06] ✅ Loaded 133 Person nodes (Duration: 0:00:00.035437)
+[2025-08-03 14:04:06] ✅ All nodes loaded (Total duration: 0:00:00.048588)
 
-🔗 Loading edges...
-Loading edges from csv_output/edges_produced.csv...
+[2025-08-03 14:04:06] 🔗 Loading edges...
+[2025-08-03 14:04:06] Loading edges from csv_output/edges_produced.csv...
   Read 15 rows from csv_output/edges_produced.csv
-  Loaded 15/15 edges...
-✅ Loaded 15 PRODUCED relationships
-Loading edges from csv_output/edges_follows.csv...
+    Record 1: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 2: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 3: source_label=, target_label=
+    Using CREATE mode for relationships
+[2025-08-03 14:04:06] Batch complete: Loaded 15 edges (Duration: 0:00:00.005070)
+[2025-08-03 14:04:06] ✅ Loaded 15 PRODUCED relationships (Duration: 0:00:00.005181)
+[2025-08-03 14:04:06] Loading edges from csv_output/edges_follows.csv...
   Read 3 rows from csv_output/edges_follows.csv
-  Loaded 3/3 edges...
-✅ Loaded 3 FOLLOWS relationships
-Loading edges from csv_output/edges_acted_in.csv...
+    Record 1: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 2: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 3: source_label=, target_label=
+    Using CREATE mode for relationships
+[2025-08-03 14:04:06] Batch complete: Loaded 3 edges (Duration: 0:00:00.000969)
+[2025-08-03 14:04:06] ✅ Loaded 3 FOLLOWS relationships (Duration: 0:00:00.001039)
+[2025-08-03 14:04:06] Loading edges from csv_output/edges_acted_in.csv...
   Read 172 rows from csv_output/edges_acted_in.csv
-  Loaded 172/172 edges...
-✅ Loaded 172 ACTED_IN relationships
-Loading edges from csv_output/edges_reviewed.csv...
+    Record 1: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 2: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 3: source_label=, target_label=
+    Using CREATE mode for relationships
+[2025-08-03 14:04:06] Batch complete: Loaded 172 edges (Duration: 0:00:00.066439)
+[2025-08-03 14:04:06] ✅ Loaded 172 ACTED_IN relationships (Duration: 0:00:00.068332)
+[2025-08-03 14:04:06] Loading edges from csv_output/edges_reviewed.csv...
   Read 9 rows from csv_output/edges_reviewed.csv
-  Loaded 9/9 edges...
-✅ Loaded 9 REVIEWED relationships
-Loading edges from csv_output/edges_wrote.csv...
+    Record 1: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 2: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 3: source_label=, target_label=
+    Using CREATE mode for relationships
+[2025-08-03 14:04:06] Batch complete: Loaded 9 edges (Duration: 0:00:00.003290)
+[2025-08-03 14:04:06] ✅ Loaded 9 REVIEWED relationships (Duration: 0:00:00.003417)
+[2025-08-03 14:04:06] Loading edges from csv_output/edges_wrote.csv...
   Read 10 rows from csv_output/edges_wrote.csv
-  Loaded 10/10 edges...
-✅ Loaded 10 WROTE relationships
-Loading edges from csv_output/edges_directed.csv...
+    Record 1: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 2: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 3: source_label=, target_label=
+    Using CREATE mode for relationships
+[2025-08-03 14:04:06] Batch complete: Loaded 10 edges (Duration: 0:00:00.003456)
+[2025-08-03 14:04:06] ✅ Loaded 10 WROTE relationships (Duration: 0:00:00.003566)
+[2025-08-03 14:04:06] Loading edges from csv_output/edges_directed.csv...
   Read 44 rows from csv_output/edges_directed.csv
-  Loaded 44/44 edges...
-✅ Loaded 44 DIRECTED relationships
+    Record 1: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 2: source_label=, target_label=
+    Using CREATE mode for relationships
+    Record 3: source_label=, target_label=
+    Using CREATE mode for relationships
+[2025-08-03 14:04:06] Batch complete: Loaded 44 edges (Duration: 0:00:00.014205)
+[2025-08-03 14:04:06] ✅ Loaded 44 DIRECTED relationships (Duration: 0:00:00.014337)
+[2025-08-03 14:04:06] ✅ All edges loaded (Total duration: 0:00:00.095961)
 
-✅ Successfully loaded data into graph 'MV7'
+[2025-08-03 14:04:06] ✅ Successfully loaded data into graph 'MOVIES' (Total loading time: 0:00:00.144561)
 
+📊 Graph Statistics:
+Nodes:
+  ['Movie']: 38
+  ['Person']: 133
+Relationships:
+  PRODUCED: 15
+  REVIEWED: 9
+  DIRECTED: 44
+  WROTE: 10
+  ACTED_IN: 172
+  FOLLOWS: 3
+
+🔍 Sample Person nodes with their attributes:
+  Node 1: (:Person{birth_year:1964,id:1,name:"Keanu Reeves"})
+  Node 2: (:Person{birth_year:1967,id:2,name:"Carrie-Anne Moss"})
+  Node 3: (:Person{birth_year:1961,id:3,name:"Laurence Fishburne"})
 
 ```
 ---------
