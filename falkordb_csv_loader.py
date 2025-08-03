@@ -10,6 +10,7 @@ import os
 import csv
 import argparse
 import sys
+from datetime import datetime
 from typing import Dict, List, Any
 from falkordb import FalkorDB
 
@@ -84,8 +85,9 @@ class FalkorDBCSVLoader:
                 
             except Exception as e:
                 error_msg = str(e).lower()
-                if 'already exists' in error_msg or 'equivalent' in error_msg:
-                    print(f"  ⚠️ ID index on {label}.id already exists, skipping")
+                if any(keyword in error_msg for keyword in ['already exists', 'equivalent', 'already indexed', 'index exists']):
+                    # Silently skip - index already exists, which is what we want
+                    pass
                 else:
                     print(f"  ❌ Error creating ID index on {label}.id: {e}")
         
@@ -134,8 +136,9 @@ class FalkorDBCSVLoader:
                         
                     except Exception as e:
                         error_msg = str(e).lower()
-                        if 'already exists' in error_msg or 'equivalent' in error_msg:
-                            print(f"  ⚠️ Index on {label}.{prop} already exists, skipping")
+                        if any(keyword in error_msg for keyword in ['already exists', 'equivalent', 'already indexed', 'index exists']):
+                            # Silently skip - index already exists, which is what we want
+                            pass
                         else:
                             print(f"  ❌ Error creating index on {label}.{prop}: {e}")
         
@@ -184,8 +187,9 @@ class FalkorDBCSVLoader:
                     
                 except Exception as e:
                     error_msg = str(e).lower()
-                    if 'already indexed' in error_msg or 'already exists' in error_msg or 'equivalent' in error_msg:
-                        print(f"  ⚠️ Supporting index for {label}({', '.join(prop_list)}) already exists")
+                    if any(keyword in error_msg for keyword in ['already indexed', 'already exists', 'equivalent', 'index exists']):
+                        # Silently skip - supporting index already exists, which is what we want
+                        pass
                     else:
                         print(f"  ❌ Error creating supporting index for {label}({', '.join(prop_list)}): {e}")
         
@@ -258,7 +262,8 @@ class FalkorDBCSVLoader:
     
     def load_nodes_batch(self, file_path: str, batch_size: int = 5000):
         """Load nodes from CSV file in batches"""
-        print(f"Loading nodes from {file_path}...")
+        start_time = datetime.now()
+        print(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Loading nodes from {file_path}...")
         
         # Extract label from filename (e.g., nodes_person.csv -> Person)
         filename = os.path.basename(file_path)
@@ -278,6 +283,7 @@ class FalkorDBCSVLoader:
         
         # Process in batches
         for i in range(0, len(rows), batch_size):
+            batch_start_time = datetime.now()
             batch = rows[i:i + batch_size]
             
             # Build Cypher query for batch
@@ -339,14 +345,18 @@ class FalkorDBCSVLoader:
                     print(f"❌ Error loading node: {e}")
                     print(f"Query: {query}")
             
-            if len(batch) > 0:
-                print(f"  Loaded {total_loaded}/{len(rows)} nodes...")
+            batch_end_time = datetime.now()
+            batch_duration = batch_end_time - batch_start_time
+            print(f"[{batch_end_time.strftime('%Y-%m-%d %H:%M:%S')}] Batch complete: Loaded {len(batch)} nodes (Duration: {batch_duration})")
         
-        print(f"✅ Loaded {total_loaded} {label} nodes")
+        end_time = datetime.now()
+        duration = end_time - start_time
+        print(f"[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] ✅ Loaded {total_loaded} {label} nodes (Duration: {duration})")
     
     def load_edges_batch(self, file_path: str, batch_size: int = 5000):
         """Load edges from CSV file in batches"""
-        print(f"Loading edges from {file_path}...")
+        start_time = datetime.now()
+        print(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Loading edges from {file_path}...")
         
         # Extract relationship type from filename (e.g., edges_acted_in.csv -> ACTED_IN)
         filename = os.path.basename(file_path)
@@ -360,6 +370,7 @@ class FalkorDBCSVLoader:
         
         # Process in batches
         for i in range(0, len(rows), batch_size):
+            batch_start_time = datetime.now()
             batch = rows[i:i + batch_size]
             
             # Build Cypher query for batch
@@ -452,10 +463,13 @@ class FalkorDBCSVLoader:
                     print(f"❌ Error loading edge: {e}")
                     print(f"Query: {query}")
             
-            if len(batch) > 0:
-                print(f"  Loaded {total_loaded}/{len(rows)} edges...")
+            batch_end_time = datetime.now()
+            batch_duration = batch_end_time - batch_start_time
+            print(f"[{batch_end_time.strftime('%Y-%m-%d %H:%M:%S')}] Batch complete: Loaded {len(batch)} edges (Duration: {batch_duration})")
         
-        print(f"✅ Loaded {total_loaded} {rel_type} relationships")
+        end_time = datetime.now()
+        duration = end_time - start_time
+        print(f"[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] ✅ Loaded {total_loaded} {rel_type} relationships (Duration: {duration})")
     
     def load_all_csvs(self, batch_size: int = 5000):
         """Load all CSV files from the csv_output directory"""
@@ -477,45 +491,31 @@ class FalkorDBCSVLoader:
         self.create_constraints_from_csv()
         
         # Load nodes first
-        print("\n📥 Loading nodes...")
+        nodes_start_time = datetime.now()
+        print(f"\n[{nodes_start_time.strftime('%Y-%m-%d %H:%M:%S')}] 📥 Loading nodes...")
         for node_file in node_files:
             file_path = os.path.join(self.csv_dir, node_file)
             self.load_nodes_batch(file_path, batch_size)
         
+        nodes_end_time = datetime.now()
+        nodes_duration = nodes_end_time - nodes_start_time
+        print(f"[{nodes_end_time.strftime('%Y-%m-%d %H:%M:%S')}] ✅ All nodes loaded (Total duration: {nodes_duration})")
+        
         # Then load edges
-        print("\n🔗 Loading edges...")
+        edges_start_time = datetime.now()
+        print(f"\n[{edges_start_time.strftime('%Y-%m-%d %H:%M:%S')}] 🔗 Loading edges...")
         for edge_file in edge_files:
             file_path = os.path.join(self.csv_dir, edge_file)
             self.load_edges_batch(file_path, batch_size)
         
-        print(f"\n✅ Successfully loaded data into graph '{self.graph_name}'")
+        edges_end_time = datetime.now()
+        edges_duration = edges_end_time - edges_start_time
+        print(f"[{edges_end_time.strftime('%Y-%m-%d %H:%M:%S')}] ✅ All edges loaded (Total duration: {edges_duration})")
+        
+        total_end_time = datetime.now()
+        total_duration = total_end_time - nodes_start_time
+        print(f"\n[{total_end_time.strftime('%Y-%m-%d %H:%M:%S')}] ✅ Successfully loaded data into graph '{self.graph_name}' (Total loading time: {total_duration})")
     
-    def load_data_only(self, batch_size: int = 5000):
-        """Load only data from CSV files, skip index creation"""
-        if not os.path.exists(self.csv_dir):
-            print(f"❌ Directory {self.csv_dir} does not exist")
-            return
-        
-        csv_files = os.listdir(self.csv_dir)
-        node_files = [f for f in csv_files if f.startswith('nodes_') and f.endswith('.csv')]
-        edge_files = [f for f in csv_files if f.startswith('edges_') and f.endswith('.csv')]
-        
-        print(f"Found {len(node_files)} node files and {len(edge_files)} edge files")
-        print("⚠️ Skipping index creation as requested")
-        
-        # Load nodes first
-        print("\n📥 Loading nodes...")
-        for node_file in node_files:
-            file_path = os.path.join(self.csv_dir, node_file)
-            self.load_nodes_batch(file_path, batch_size)
-        
-        # Then load edges
-        print("\n🔗 Loading edges...")
-        for edge_file in edge_files:
-            file_path = os.path.join(self.csv_dir, edge_file)
-            self.load_edges_batch(file_path, batch_size)
-        
-        print(f"\n✅ Successfully loaded data into graph '{self.graph_name}' (without indexes)")
     
     def verify_node_attributes(self, label: str = "Person", limit: int = 5):
         """Verify what attributes were loaded for a specific node type"""
@@ -567,10 +567,8 @@ def main():
     parser.add_argument('--port', type=int, default=6379, help='FalkorDB port')
     parser.add_argument('--username', help='FalkorDB username (optional)')
     parser.add_argument('--password', help='FalkorDB password (optional)')
-    parser.add_argument('--batch-size', type=int, default=5000, help='Batch size for loading')
+    parser.add_argument('--batch-size', type=int, default=5000, help='Batch size for loading (default: 5000)')
     parser.add_argument('--stats', action='store_true', help='Show graph statistics after loading')
-    parser.add_argument('--skip-indexes', action='store_true', help='Skip index and constraint creation')
-    parser.add_argument('--indexes-only', action='store_true', help='Only create indexes and constraints, skip data loading')
     parser.add_argument('--csv-dir', default='csv_output', help='Directory containing CSV files (default: csv_output)')
     parser.add_argument('--merge-mode', action='store_true', help='Use MERGE instead of CREATE for upsert behavior')
     args = parser.parse_args()
@@ -586,21 +584,10 @@ def main():
     )
     
     try:
-        if args.indexes_only:
-            # Only create indexes and constraints
-            print("🗼️ Creating indexes and constraints only...")
-            loader.create_id_indexes_for_all_labels()
-            loader.create_indexes_from_csv()
-            loader.create_supporting_indexes_for_constraints()
-            loader.create_constraints_from_csv()
-        elif args.skip_indexes:
-            # Load data without creating indexes
-            loader.load_data_only(args.batch_size)
-        else:
-            # Default: load everything
-            loader.load_all_csvs(args.batch_size)
+        # Load everything (indexes, constraints, and data)
+        loader.load_all_csvs(args.batch_size)
         
-        if args.stats and not args.indexes_only:
+        if args.stats:
             loader.get_graph_stats()
             loader.verify_node_attributes("Person", 3)
             
