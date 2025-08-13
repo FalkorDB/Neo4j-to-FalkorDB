@@ -350,9 +350,14 @@ MATCH p=()-[:REVIEWED]->() RETURN p LIMIT 25;
 ```
 
 Neo4j view
-<img width="742" height="695" alt="neo4j-movies-reviews" src="https://github.com/user-attachments/assets/c8e8b024-a8c8-4f7e-a995-82175d434846" />
+
+<img width="742" height="695" alt="neo4j-movies-reviews" src="https://github.com/user-attachments/assets/c5536967-135b-467e-9bbe-ff6c7182f79f" />
+
 
 FalkorDB view
-<img width="1203" height="733" alt="falkordb-movies-reviewed" src="https://github.com/user-attachments/assets/8ba6c36a-d233-4336-81bf-de74d219c947" />
+
+<img width="1203" height="733" alt="falkordb-movies-reviewed" src="https://github.com/user-attachments/assets/8173d706-f989-4611-ac00-d4752e8f8ae8" />
+
+
 
 Good Luck!
