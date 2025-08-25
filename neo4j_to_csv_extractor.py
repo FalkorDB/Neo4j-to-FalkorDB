@@ -450,7 +450,7 @@ class Neo4jToCSVExtractor:
         properties = sorted(list(self.get_node_properties(label)))
         
         # Create CSV file
-        csv_filename = os.path.join(self.output_dir, f"nodes_{label.lower()}.csv")
+        csv_filename = os.path.join(self.output_dir, f"nodes_{label}.csv")
         
         with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
             # Map property names for headers
@@ -596,7 +596,7 @@ class Neo4jToCSVExtractor:
         properties = sorted(list(self.get_relationship_properties(rel_type)))
         
         # Create CSV file
-        csv_filename = os.path.join(self.output_dir, f"edges_{rel_type.lower()}.csv")
+        csv_filename = os.path.join(self.output_dir, f"edges_{rel_type}.csv")
         
         with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
             # Map property names for headers
@@ -684,7 +684,7 @@ class Neo4jToCSVExtractor:
             # Load nodes
             f.write("// Load Nodes\n")
             for node_file in node_files:
-                label = os.path.basename(node_file).replace('nodes_', '').replace('.csv', '').title()
+                label = os.path.basename(node_file).replace('nodes_', '').replace('.csv', '')
                 f.write(f"""
 LOAD CSV WITH HEADERS FROM 'file:///{os.path.basename(node_file)}' AS row
 MERGE (n:{label} {{id: toInteger(row.id)}})
@@ -696,7 +696,7 @@ REMOVE n.id, n.labels;
             # Load relationships
             f.write("// Load Relationships\n")
             for edge_file in edge_files:
-                rel_type = os.path.basename(edge_file).replace('edges_', '').replace('.csv', '').upper()
+                rel_type = os.path.basename(edge_file).replace('edges_', '').replace('.csv', '')
                 
                 # Read the first row of the CSV to get label information
                 try:

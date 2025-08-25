@@ -71,10 +71,10 @@ class FalkorDBCSVLoader:
         created_count = 0
         
         for node_file in node_files:
-            # Extract label from filename (e.g., nodes_person.csv -> Person)
+            # Extract label from filename (preserve original case)
             raw_label = node_file.replace('nodes_', '').replace('.csv', '')
             # Sanitize label: replace colons and other invalid characters with underscores
-            label = raw_label.replace(':', '_').title()
+            label = raw_label.replace(':', '_')
             
             try:
                 # Create index on id property for this label
@@ -265,11 +265,11 @@ class FalkorDBCSVLoader:
         start_time = datetime.now()
         print(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Loading nodes from {file_path}...")
         
-        # Extract label from filename (e.g., nodes_person.csv -> Person)
+        # Extract label from filename (preserve original case)
         filename = os.path.basename(file_path)
         raw_label = filename.replace('nodes_', '').replace('.csv', '')
         # Sanitize label: replace colons and other invalid characters with underscores
-        label = raw_label.replace(':', '_').title()
+        label = raw_label.replace(':', '_')
         
         rows = self.read_csv_file(file_path)
         if not rows:
@@ -358,9 +358,9 @@ class FalkorDBCSVLoader:
         start_time = datetime.now()
         print(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Loading edges from {file_path}...")
         
-        # Extract relationship type from filename (e.g., edges_acted_in.csv -> ACTED_IN)
+        # Extract relationship type from filename (preserve original case)
         filename = os.path.basename(file_path)
-        rel_type = filename.replace('edges_', '').replace('.csv', '').upper()
+        rel_type = filename.replace('edges_', '').replace('.csv', '')
         
         rows = self.read_csv_file(file_path)
         if not rows:
