@@ -20,6 +20,30 @@ you may generate a template config file using this command:
 ```bash
 python3 neo4j_to_csv_extractor.py --password <your-neo4j-password> --generate-template <your-template>.json --analyze-only
 ```
+Usage of neo4j_to_csv_extrator.py is shown below:
+```bash
+usage: neo4j_to_csv_extractor.py [-h] [--uri URI] [--username USERNAME] --password PASSWORD [--database DATABASE] [--batch-size BATCH_SIZE]
+                                 [--nodes-only] [--edges-only] [--indexes-only] [--config CONFIG] [--generate-template GENERATE_TEMPLATE]
+                                 [--analyze-only]
+
+Extract Neo4j data to CSV for FalkorDB migration
+
+options:
+  -h, --help            show this help message and exit
+  --uri URI             Neo4j URI
+  --username USERNAME   Neo4j username
+  --password PASSWORD   Neo4j password
+  --database DATABASE   Neo4j database name
+  --batch-size BATCH_SIZE
+                        Batch size for extraction
+  --nodes-only          Extract only nodes
+  --edges-only          Extract only relationships
+  --indexes-only        Extract only indexes and constraints
+  --config CONFIG       Path to migration configuration JSON file
+  --generate-template GENERATE_TEMPLATE
+                        Generate template migration config file from Neo4j topology (specify output filename)
+  --analyze-only        Only analyze topology and generate template config, do not extract data
+```
 
 Sample output of the ontology extraction phase is shown below as executed against the movies dataset
 --------
