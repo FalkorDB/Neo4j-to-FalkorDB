@@ -227,6 +227,8 @@ options:
   --merge-mode          Use MERGE instead of CREATE for upsert behavior
 
 ```
+Note: In addition to the python loader indicated above, you may use a Rust based data loader, which can improve loading speed.
+You can find the loader in FalkorDB/FalkorDB-Loader-RS repo.
 
 ---------
 Execution output example
