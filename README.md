@@ -6,7 +6,7 @@ allow transformation of labels and properties, and as a next step load the csv f
 Please note that you can use any source neo4j dataset, and the process migrates nodes, edges, constraints and indexes.
 
 NOTE: there are 2 options to load exported dataset to FalkorDB. The python script in this repo and a Rust based implementation\
-the can be found in here https://github.com/FalkorDB/FalkorDB-Loader-RS
+that can be found in here https://github.com/FalkorDB/FalkorDB-Loader-RS
 
 ## Step 1: Setting up neo4j 
 Follow neo4j documentation to setup a locally run neo4j database: 
