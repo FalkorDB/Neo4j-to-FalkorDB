@@ -336,14 +336,51 @@ class FalkorDBCSVLoader:
                     query_parts.append(f"MERGE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")            
                 else:
                     query_parts.append(f"CREATE (:{label} {{id: {id_str}{', ' + prop_str if prop_str else ''}}})")            
-            # Execute each node query individually
-            for query in query_parts:
-                try:
-                    self.graph.query(query)
-                    total_loaded += 1
-                except Exception as e:
-                    print(f"❌ Error loading node: {e}")
-                    print(f"Query: {query}")
+            # Execute batch query using UNWIND for better performance over network
+            try:
+                # Build batch data for UNWIND
+                batch_data = []
+                for j, row in enumerate(batch):
+                    node_id = row.get('id', '')
+                    properties = {}
+                    
+                    for key, value in row.items():
+                        if key not in ['id', 'labels'] and value:
+                            if value.isdigit():
+                                properties[key] = int(value)
+                            elif value.replace('.', '', 1).lstrip('-').isdigit():
+                                properties[key] = float(value)
+                            else:
+                                properties[key] = value
+                    
+                    # Smart ID handling
+                    if node_id.isdigit():
+                        node_id_value = int(node_id)
+                    else:
+                        node_id_value = node_id
+                    
+                    batch_data.append({'id': node_id_value, 'props': properties})
+                
+                # Create single UNWIND query for the entire batch
+                if self.merge_mode:
+                    unwind_query = f"UNWIND $batch AS row MERGE (n:{label} {{id: row.id}}) SET n += row.props"
+                else:
+                    unwind_query = f"UNWIND $batch AS row CREATE (n:{label}) SET n.id = row.id, n += row.props"
+                
+                self.graph.query(unwind_query, {'batch': batch_data})
+                total_loaded += len(batch)
+                
+            except Exception as e:
+                print(f"❌ Error loading batch: {e}")
+                print(f"Falling back to individual queries for this batch...")
+                # Fallback to individual queries if batch fails
+                for query in query_parts:
+                    try:
+                        self.graph.query(query)
+                        total_loaded += 1
+                    except Exception as e2:
+                        print(f"❌ Error loading node: {e2}")
+                        print(f"Query: {query}")
             
             batch_end_time = datetime.now()
             batch_duration = batch_end_time - batch_start_time
@@ -391,13 +428,20 @@ class FalkorDBCSVLoader:
                 # Add all properties except source, target, type, source_label, target_label
                 for key, value in row.items():
                     if key not in ['source', 'target', 'type', 'source_label', 'target_label'] and value:
+                        # Clean up property key: remove duplicate prefixes like 'Date:Date' -> 'Date'
+                        clean_key = key
+                        if ':' in key:
+                            parts = key.split(':')
+                            if len(parts) == 2 and parts[0] == parts[1]:
+                                clean_key = parts[0]
+                        
                         # Try to convert to appropriate type
                         if value.isdigit():
-                            properties[key] = int(value)
+                            properties[clean_key] = int(value)
                         elif value.replace('.', '', 1).isdigit():
-                            properties[key] = float(value)
+                            properties[clean_key] = float(value)
                         else:
-                            properties[key] = value
+                            properties[clean_key] = value
                 
                 # Build property string
                 prop_str = ', '.join([f"{k}: {repr(v)}" for k, v in properties.items()])
@@ -454,14 +498,105 @@ class FalkorDBCSVLoader:
                     else:
                         print(f"    Using CREATE mode for relationships")
             
-            # Execute each relationship query individually to avoid WITH clause issues
-            for query in query_parts:
-                try:
-                    self.graph.query(query)
-                    total_loaded += 1
-                except Exception as e:
-                    print(f"❌ Error loading edge: {e}")
-                    print(f"Query: {query}")
+            # Execute batch query using UNWIND for better performance over network
+            try:
+                # Build batch data for UNWIND
+                batch_data = []
+                for j, row in enumerate(batch):
+                    source_id = row.get('source', '')
+                    target_id = row.get('target', '')
+                    
+                    if not source_id or not target_id:
+                        continue
+                    
+                    properties = {}
+                    source_label = row.get('source_label', '').strip()
+                    target_label = row.get('target_label', '').strip()
+                    
+                    for key, value in row.items():
+                        if key not in ['source', 'target', 'type', 'source_label', 'target_label'] and value:
+                            clean_key = key
+                            if ':' in key:
+                                parts = key.split(':')
+                                if len(parts) == 2 and parts[0] == parts[1]:
+                                    clean_key = parts[0]
+                            
+                            if value.isdigit():
+                                properties[clean_key] = int(value)
+                            elif value.replace('.', '', 1).isdigit():
+                                properties[clean_key] = float(value)
+                            else:
+                                properties[clean_key] = value
+                    
+                    # Smart ID handling
+                    source_id_value = int(source_id) if source_id.isdigit() else source_id
+                    target_id_value = int(target_id) if target_id.isdigit() else target_id
+                    
+                    # Get first label for nodes
+                    source_label_first = source_label.split(':')[0] if source_label and ':' in source_label else source_label
+                    target_label_first = target_label.split(':')[0] if target_label and ':' in target_label else target_label
+                    
+                    batch_data.append({
+                        'source_id': source_id_value,
+                        'target_id': target_id_value,
+                        'source_label': source_label_first,
+                        'target_label': target_label_first,
+                        'props': properties
+                    })
+                
+                # Create single UNWIND query for the entire batch
+                if batch_data:
+                    if self.merge_mode:
+                        # Use MERGE mode with label matching if available
+                        if batch_data[0]['source_label'] and batch_data[0]['target_label']:
+                            unwind_query = f"""
+                            UNWIND $batch AS row
+                            MERGE (a:{batch_data[0]['source_label']} {{id: row.source_id}})
+                            MERGE (b:{batch_data[0]['target_label']} {{id: row.target_id}})
+                            MERGE (a)-[r:{rel_type}]->(b)
+                            SET r += row.props
+                            """
+                        else:
+                            unwind_query = f"""
+                            UNWIND $batch AS row
+                            MERGE (a {{id: row.source_id}})
+                            MERGE (b {{id: row.target_id}})
+                            MERGE (a)-[r:{rel_type}]->(b)
+                            SET r += row.props
+                            """
+                    else:
+                        # Use CREATE mode with label matching if available
+                        if batch_data[0]['source_label'] and batch_data[0]['target_label']:
+                            unwind_query = f"""
+                            UNWIND $batch AS row
+                            MATCH (a:{batch_data[0]['source_label']} {{id: row.source_id}})
+                            MATCH (b:{batch_data[0]['target_label']} {{id: row.target_id}})
+                            CREATE (a)-[r:{rel_type}]->(b)
+                            SET r += row.props
+                            """
+                        else:
+                            unwind_query = f"""
+                            UNWIND $batch AS row
+                            MATCH (a {{id: row.source_id}})
+                            MATCH (b {{id: row.target_id}})
+                            CREATE (a)-[r:{rel_type}]->(b)
+                            SET r += row.props
+                            """
+                    
+                    self.graph.query(unwind_query, {'batch': batch_data})
+                    total_loaded += len(batch_data)
+                    
+            except Exception as e:
+                print(f"❌ Error loading batch: {e}")
+                print(f"Falling back to individual queries for this batch...")
+                # Fallback to individual queries if batch fails
+                for query in query_parts:
+                    try:
+                        self.graph.query(query)
+                        total_loaded += 1
+                    except Exception as e2:
+                        print(f"❌ Error loading edge: {e2}")
+                        print(f"Query: {query}")
             
             batch_end_time = datetime.now()
             batch_duration = batch_end_time - batch_start_time
