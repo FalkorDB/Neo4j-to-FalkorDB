@@ -16,29 +16,36 @@ from falkordb import FalkorDB
 
 
 class FalkorDBCSVLoader:
-    def __init__(self, host: str = "localhost", port: int = 6379, graph_name: str = "graph", csv_dir: str = "csv_output", username: str = None, password: str = None, merge_mode: bool = False):
+    def __init__(self, host: str = "localhost", port: int = 6379, graph_name: str = "graph", csv_dir: str = "csv_output", username: str = None, password: str = None, merge_mode: bool = False, multi_graph_mode: bool = False):
         """
         Initialize FalkorDB connection
         
         :param host: FalkorDB host
         :param port: FalkorDB port  
-        :param graph_name: Target graph name
+        :param graph_name: Target graph name (used as prefix in multi-graph mode)
         :param csv_dir: Directory containing CSV files
         :param username: FalkorDB username (optional)
         :param password: FalkorDB password (optional)
         :param merge_mode: If True, use MERGE instead of CREATE for upsert behavior
+        :param multi_graph_mode: If True, load each tenant subfolder into separate graphs
         """
         self.host = host
         self.port = port
         self.graph_name = graph_name
         self.csv_dir = csv_dir
         self.merge_mode = merge_mode
+        self.multi_graph_mode = multi_graph_mode
         
         try:
             print(f"Connecting to FalkorDB at {host}:{port}...")
             self.db = FalkorDB(host=host, port=port, username=username, password=password)
-            self.graph = self.db.select_graph(graph_name)
-            print(f"✅ Connected to FalkorDB graph '{graph_name}'")
+            
+            if not multi_graph_mode:
+                self.graph = self.db.select_graph(graph_name)
+                print(f"✅ Connected to FalkorDB graph '{graph_name}'")
+            else:
+                self.graph = None  # Will be set per tenant
+                print(f"✅ Connected to FalkorDB in multi-graph mode")
         except Exception as e:
             print(f"❌ Failed to connect to FalkorDB: {e}")
             sys.exit(1)
@@ -612,6 +619,14 @@ class FalkorDBCSVLoader:
             print(f"❌ Directory {self.csv_dir} does not exist")
             return
         
+        # Check for multi-graph mode (presence of tenant_* subdirectories)
+        if self.multi_graph_mode:
+            self._load_multi_graph_csvs(batch_size)
+        else:
+            self._load_single_graph_csvs(batch_size)
+    
+    def _load_single_graph_csvs(self, batch_size: int = 5000):
+        """Load CSV files into a single graph"""
         csv_files = os.listdir(self.csv_dir)
         node_files = [f for f in csv_files if f.startswith('nodes_') and f.endswith('.csv')]
         edge_files = [f for f in csv_files if f.startswith('edges_') and f.endswith('.csv')]
@@ -650,6 +665,63 @@ class FalkorDBCSVLoader:
         total_end_time = datetime.now()
         total_duration = total_end_time - nodes_start_time
         print(f"\n[{total_end_time.strftime('%Y-%m-%d %H:%M:%S')}] ✅ Successfully loaded data into graph '{self.graph_name}' (Total loading time: {total_duration})")
+    
+    def _load_multi_graph_csvs(self, batch_size: int = 5000):
+        """Load CSV files from tenant subdirectories into separate graphs"""
+        # Find all tenant subdirectories
+        subdirs = [d for d in os.listdir(self.csv_dir) 
+                   if os.path.isdir(os.path.join(self.csv_dir, d)) and d.startswith('tenant_')]
+        
+        if not subdirs:
+            print(f"⚠️  No tenant subdirectories found in {self.csv_dir}")
+            print("   Falling back to single-graph mode...")
+            self._load_single_graph_csvs(batch_size)
+            return
+        
+        print(f"\n🗂️  Found {len(subdirs)} tenant directories: {subdirs}")
+        print(f"   Each will be loaded into a separate graph\n")
+        
+        overall_start_time = datetime.now()
+        
+        for tenant_dir in sorted(subdirs):
+            tenant_path = os.path.join(self.csv_dir, tenant_dir)
+            
+            # Extract tenant name from directory (remove 'tenant_' prefix)
+            tenant_name = tenant_dir.replace('tenant_', '')
+            graph_name = f"{self.graph_name}_{tenant_name}"
+            
+            print(f"\n{'='*80}")
+            print(f"📊 Processing tenant: {tenant_name}")
+            print(f"   Target graph: {graph_name}")
+            print(f"   Source directory: {tenant_path}")
+            print(f"{'='*80}\n")
+            
+            # Switch to this tenant's graph
+            self.graph = self.db.select_graph(graph_name)
+            
+            # Temporarily update csv_dir to point to tenant directory
+            original_csv_dir = self.csv_dir
+            self.csv_dir = tenant_path
+            
+            try:
+                # Load this tenant's data
+                tenant_start_time = datetime.now()
+                self._load_single_graph_csvs(batch_size)
+                tenant_duration = datetime.now() - tenant_start_time
+                print(f"\n✅ Completed loading tenant '{tenant_name}' in {tenant_duration}")
+                
+            except Exception as e:
+                print(f"\n❌ Error loading tenant '{tenant_name}': {e}")
+            finally:
+                # Restore original csv_dir
+                self.csv_dir = original_csv_dir
+        
+        overall_duration = datetime.now() - overall_start_time
+        print(f"\n{'='*80}")
+        print(f"✅ Multi-graph loading complete!")
+        print(f"   Loaded {len(subdirs)} tenants into separate graphs")
+        print(f"   Total time: {overall_duration}")
+        print(f"{'='*80}")
     
     
     def verify_node_attributes(self, label: str = "Person", limit: int = 5):
@@ -696,8 +768,21 @@ class FalkorDBCSVLoader:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Load CSV files into FalkorDB')
-    parser.add_argument('graph_name', help='Target graph name in FalkorDB')
+    parser = argparse.ArgumentParser(
+        description='Load CSV files into FalkorDB',
+        epilog='''
+Examples:
+  # Load into a single graph
+  python3 falkordb_csv_loader.py mygraph
+  
+  # Load multi-tenant data into separate graphs
+  python3 falkordb_csv_loader.py mygraph --multi-graph
+  
+  # This will create graphs: mygraph_tenant1, mygraph_tenant2, etc.
+''',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument('graph_name', help='Target graph name in FalkorDB (used as prefix in multi-graph mode)')
     parser.add_argument('--host', default='localhost', help='FalkorDB host')
     parser.add_argument('--port', type=int, default=6379, help='FalkorDB port')
     parser.add_argument('--username', help='FalkorDB username (optional)')
@@ -706,6 +791,7 @@ def main():
     parser.add_argument('--stats', action='store_true', help='Show graph statistics after loading')
     parser.add_argument('--csv-dir', default='csv_output', help='Directory containing CSV files (default: csv_output)')
     parser.add_argument('--merge-mode', action='store_true', help='Use MERGE instead of CREATE for upsert behavior')
+    parser.add_argument('--multi-graph', action='store_true', help='Enable multi-graph mode: load each tenant_* subfolder into a separate graph')
     args = parser.parse_args()
     
     loader = FalkorDBCSVLoader(
@@ -715,7 +801,8 @@ def main():
         csv_dir=args.csv_dir,
         username=args.username,
         password=args.password,
-        merge_mode=args.merge_mode
+        merge_mode=args.merge_mode,
+        multi_graph_mode=args.multi_graph
     )
     
     try:

@@ -17,12 +17,28 @@ from collections import defaultdict
 
 
 class Neo4jToCSVExtractor:
-    def __init__(self, uri: str, username: str, password: str, database: str = "neo4j", config_file: Optional[str] = None):
-        """Initialize connection to Neo4j database"""
+    def __init__(self, uri: str, username: str, password: str, database: str = "neo4j", config_file: Optional[str] = None, 
+                 tenant_mode: Optional[str] = None, tenant_filter_key: Optional[str] = None):
+        """Initialize connection to Neo4j database
+        
+        Args:
+            uri: Neo4j connection URI
+            username: Neo4j username
+            password: Neo4j password
+            database: Neo4j database name
+            config_file: Optional migration configuration file
+            tenant_mode: Optional multi-tenant segregation mode ('label' or 'property')
+            tenant_filter_key: The label or property name to filter tenants by
+        """
         print(f"Connecting to Neo4j at {uri} with username '{username}'...")
         
         # Load configuration
         self.config = self._load_config(config_file)
+        
+        # Multi-tenant configuration
+        self.tenant_mode = tenant_mode
+        self.tenant_filter_key = tenant_filter_key
+        self.tenants = []
         
         try:
             self.driver = GraphDatabase.driver(uri, auth=(username, password))
@@ -34,6 +50,11 @@ class Neo4jToCSVExtractor:
             
             # Ensure output directory exists
             os.makedirs(self.output_dir, exist_ok=True)
+            
+            # Discover tenants if multi-tenant mode is enabled
+            if self.tenant_mode:
+                self._discover_tenants()
+            
             print("✅ Successfully connected to Neo4j!")
             
         except AuthError as e:
@@ -104,6 +125,64 @@ class Neo4jToCSVExtractor:
         except Exception as e:
             print(f"❌ Connection test failed: {e}")
             raise
+    
+    def _discover_tenants(self):
+        """Discover all tenants in the database based on tenant mode"""
+        if not self.tenant_mode or not self.tenant_filter_key:
+            return
+        
+        print(f"🔍 Discovering tenants using {self.tenant_mode} mode with key '{self.tenant_filter_key}'...")
+        
+        with self.driver.session(database=self.database) as session:
+            if self.tenant_mode == 'label':
+                # Filter nodes that have the specified label
+                query = f"""
+                MATCH (n:{self.tenant_filter_key})
+                RETURN DISTINCT '{self.tenant_filter_key}' as tenant
+                """
+                result = session.run(query)
+                self.tenants = [record['tenant'] for record in result]
+            
+            elif self.tenant_mode == 'property':
+                # Get distinct values of the specified property across all nodes
+                query = f"""
+                MATCH (n)
+                WHERE n.{self.tenant_filter_key} IS NOT NULL
+                RETURN DISTINCT n.{self.tenant_filter_key} as tenant
+                ORDER BY tenant
+                """
+                result = session.run(query)
+                self.tenants = [str(record['tenant']) for record in result]
+        
+        if self.tenants:
+            print(f"  Found {len(self.tenants)} tenant(s): {self.tenants}")
+            # Create subdirectories for each tenant
+            for tenant in self.tenants:
+                tenant_dir = self._get_tenant_dir(tenant)
+                os.makedirs(tenant_dir, exist_ok=True)
+        else:
+            print(f"  ⚠️  No tenants found using {self.tenant_mode} mode with key '{self.tenant_filter_key}'")
+    
+    def _get_tenant_dir(self, tenant: str) -> str:
+        """Get the output directory for a specific tenant"""
+        # Sanitize tenant name for use in directory name
+        safe_tenant = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in tenant)
+        return os.path.join(self.output_dir, f"tenant_{safe_tenant}")
+    
+    def _get_tenant_filter_clause(self, tenant: Optional[str] = None) -> str:
+        """Generate a WHERE clause for filtering by tenant"""
+        if not self.tenant_mode or not self.tenant_filter_key or tenant is None:
+            return ""
+        
+        if self.tenant_mode == 'label':
+            # Tenant filtering by label is handled in MATCH clause
+            return ""
+        elif self.tenant_mode == 'property':
+            # Escape single quotes in tenant value
+            safe_tenant = tenant.replace("'", "\\'").replace("\\", "\\\\")
+            return f"WHERE n.{self.tenant_filter_key} = '{safe_tenant}'"
+        
+        return ""
     
     def close(self):
         """Close the database connection"""
@@ -442,15 +521,27 @@ class Neo4jToCSVExtractor:
         print(f"Generated FalkorDB index creation script: {script_filename}")
         return script_filename
     
-    def extract_nodes_by_label(self, label: str, batch_size: int = 1000) -> str:
-        """Extract all nodes with a specific label to CSV"""
-        print(f"Extracting nodes with label: {label}")
+    def extract_nodes_by_label(self, label: str, batch_size: int = 1000, tenant: Optional[str] = None) -> str:
+        """Extract all nodes with a specific label to CSV
+        
+        Args:
+            label: The node label to extract
+            batch_size: Number of nodes to process per batch
+            tenant: Optional tenant identifier for multi-tenant mode
+        """
+        tenant_info = f" (tenant: {tenant})" if tenant else ""
+        print(f"Extracting nodes with label: {label}{tenant_info}")
         
         # Get properties for this label
         properties = sorted(list(self.get_node_properties(label)))
         
-        # Create CSV file
-        csv_filename = os.path.join(self.output_dir, f"nodes_{label}.csv")
+        # Filter out tenant property if in multi-tenant mode
+        if tenant and self.tenant_mode == 'property' and self.tenant_filter_key:
+            properties = [p for p in properties if p != self.tenant_filter_key]
+        
+        # Determine output directory and filename
+        output_dir = self._get_tenant_dir(tenant) if tenant else self.output_dir
+        csv_filename = os.path.join(output_dir, f"nodes_{label}.csv")
         
         with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
             # Map property names for headers
@@ -470,8 +561,11 @@ class Neo4jToCSVExtractor:
             
             with self.driver.session(database=self.database) as session:
                 while True:
+                    # Build query with tenant filtering
+                    tenant_filter = self._get_tenant_filter_clause(tenant)
                     query = f"""
                     MATCH (n:{label})
+                    {tenant_filter}
                     RETURN id(n) as node_id, labels(n) as labels, n
                     SKIP {skip} LIMIT {batch_size}
                     """
@@ -525,9 +619,21 @@ class Neo4jToCSVExtractor:
         
         print(f"Found {len(labels)} node labels: {labels}")
         
-        for label in labels:
-            csv_file = self.extract_nodes_by_label(label, batch_size)
-            csv_files.append(csv_file)
+        # If multi-tenant mode, extract nodes for each tenant separately
+        if self.tenant_mode and self.tenants:
+            print(f"\n📦 Extracting nodes in multi-tenant mode ({len(self.tenants)} tenant(s))")
+            for tenant in self.tenants:
+                print(f"\n--- Processing tenant: {tenant} ---")
+                for label in labels:
+                    # Skip the tenant label itself if using label-based filtering
+                    if self.tenant_mode == 'label' and label == self.tenant_filter_key:
+                        continue
+                    csv_file = self.extract_nodes_by_label(label, batch_size, tenant)
+                    csv_files.append(csv_file)
+        else:
+            for label in labels:
+                csv_file = self.extract_nodes_by_label(label, batch_size)
+                csv_files.append(csv_file)
         
         return csv_files
     
@@ -586,17 +692,29 @@ class Neo4jToCSVExtractor:
         
         return value_str
 
-    def extract_relationships_by_type(self, rel_type: str, batch_size: int = 1000) -> str:
-        """Extract all relationships of a specific type to CSV"""
+    def extract_relationships_by_type(self, rel_type: str, batch_size: int = 1000, tenant: Optional[str] = None) -> str:
+        """Extract all relationships of a specific type to CSV
+        
+        Args:
+            rel_type: The relationship type to extract
+            batch_size: Number of relationships to process per batch
+            tenant: Optional tenant identifier for multi-tenant mode
+        """
         # Map relationship type name
         mapped_rel_type = self.config['relationship_mappings'].get(rel_type, rel_type)
-        print(f"Extracting relationships of type: {mapped_rel_type}")
+        tenant_info = f" (tenant: {tenant})" if tenant else ""
+        print(f"Extracting relationships of type: {mapped_rel_type}{tenant_info}")
         
         # Get properties for this relationship type
         properties = sorted(list(self.get_relationship_properties(rel_type)))
         
-        # Create CSV file
-        csv_filename = os.path.join(self.output_dir, f"edges_{rel_type}.csv")
+        # Filter out tenant property if in multi-tenant mode
+        if tenant and self.tenant_mode == 'property' and self.tenant_filter_key:
+            properties = [p for p in properties if p != self.tenant_filter_key]
+        
+        # Determine output directory and filename
+        output_dir = self._get_tenant_dir(tenant) if tenant else self.output_dir
+        csv_filename = os.path.join(output_dir, f"edges_{rel_type}.csv")
         
         with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
             # Map property names for headers
@@ -616,8 +734,16 @@ class Neo4jToCSVExtractor:
             
             with self.driver.session(database=self.database) as session:
                 while True:
+                    # Build query with tenant filtering
+                    if tenant and self.tenant_mode == 'property' and self.tenant_filter_key:
+                        safe_tenant = tenant.replace("'", "\\'").replace("\\", "\\\\")
+                        tenant_filter = f"WHERE a.{self.tenant_filter_key} = '{safe_tenant}' AND b.{self.tenant_filter_key} = '{safe_tenant}'"
+                    else:
+                        tenant_filter = ""
+                    
                     query = f"""
                     MATCH (a)-[r:{rel_type}]->(b)
+                    {tenant_filter}
                     RETURN id(a) as source_id, labels(a) as source_label, id(b) as target_id, labels(b) as target_label, type(r) as rel_type, r
                     SKIP {skip} LIMIT {batch_size}
                     """
@@ -667,9 +793,18 @@ class Neo4jToCSVExtractor:
         
         print(f"Found {len(rel_types)} relationship types: {rel_types}")
         
-        for rel_type in rel_types:
-            csv_file = self.extract_relationships_by_type(rel_type, batch_size)
-            csv_files.append(csv_file)
+        # If multi-tenant mode, extract relationships for each tenant separately
+        if self.tenant_mode and self.tenants:
+            print(f"\n🔗 Extracting relationships in multi-tenant mode ({len(self.tenants)} tenant(s))")
+            for tenant in self.tenants:
+                print(f"\n--- Processing tenant: {tenant} ---")
+                for rel_type in rel_types:
+                    csv_file = self.extract_relationships_by_type(rel_type, batch_size, tenant)
+                    csv_files.append(csv_file)
+        else:
+            for rel_type in rel_types:
+                csv_file = self.extract_relationships_by_type(rel_type, batch_size)
+                csv_files.append(csv_file)
         
         return csv_files
     
@@ -947,9 +1082,27 @@ Examples:
     parser.add_argument('--generate-template', help='Generate template migration config file from Neo4j topology (specify output filename)')
     parser.add_argument('--analyze-only', action='store_true', help='Only analyze topology and generate template config, do not extract data')
     
+    # Multi-tenant options
+    parser.add_argument('--tenant-mode', choices=['label', 'property'], help='Enable multi-tenant mode: "label" (filter by node label) or "property" (filter by property value)')
+    parser.add_argument('--tenant-filter', help='The label name or property name to use for tenant segregation (required with --tenant-mode)')
+    
     args = parser.parse_args()
     
-    extractor = Neo4jToCSVExtractor(args.uri, args.username, args.password, args.database, args.config)
+    # Validate multi-tenant arguments
+    if args.tenant_mode and not args.tenant_filter:
+        parser.error("--tenant-filter is required when --tenant-mode is specified")
+    if args.tenant_filter and not args.tenant_mode:
+        parser.error("--tenant-mode is required when --tenant-filter is specified")
+    
+    extractor = Neo4jToCSVExtractor(
+        args.uri, 
+        args.username, 
+        args.password, 
+        args.database, 
+        args.config,
+        tenant_mode=args.tenant_mode,
+        tenant_filter_key=args.tenant_filter
+    )
     
     try:
         # Handle template generation
