@@ -460,9 +460,9 @@ class FalkorDBCSVLoader:
                 # Build MATCH clause with labels if available
                 if source_label and target_label:
                     # Use specific labels for more efficient matching
-                    # Handle multiple labels by taking the first one
-                    source_label_first = source_label.split(':')[0] if ':' in source_label else source_label
-                    target_label_first = target_label.split(':')[0] if ':' in target_label else target_label
+                    # Handle multiple labels by taking the first one (e.g., "OS:Process" -> "OS")
+                    source_label_first = source_label.split(':')[0]
+                    target_label_first = target_label.split(':')[0]
                     
                     if self.merge_mode:
                         # Use MERGE for upsert behavior - merge both nodes and relationship
