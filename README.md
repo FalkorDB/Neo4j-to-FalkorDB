@@ -234,30 +234,48 @@ After setup you will have falkordb data conntection at port 6379 and web browser
 ```bash
 python3 falkordb_csv_loader.py MOVIES --port 6379 --stats
 ```
-Note: In case your FalkorDB connection is secured with username and password you can add them according to the syntax described below. You may also control the batch size used per loaded CSV file.
+
+### Loader connection auth (connect-as)
+In case your FalkorDB connection is already secured with username and password, you can pass `--username/--password` so the loader can connect.
+
+### Provision auth for the migrated graph(s) (create/update ACL user)
+If you want the migrated graph(s) to be accessible via a specific username/password after the migration, you can ask the loader to **create/update** a Redis ACL user:
+
 ```bash
-usage: falkordb_csv_loader.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--batch-size BATCH_SIZE] [--stats] [--csv-dir CSV_DIR]
-                              [--merge-mode] [--multi-graph]
+python3 falkordb_csv_loader.py MOVIES \
+  --provision-username movies_app \
+  --provision-password '<password>'
+```
+
+By default this provisions permissions in `graph-only` mode and **overwrites** any existing definition of that ACL user (useful when re-running the migration).
+
+Important: creating an ACL user alone does **not** prevent unauthenticated access if Redis `default` user is still enabled without a password.
+
+To require authentication for new connections, you can disable the `default` user after provisioning:
+
+```bash
+python3 falkordb_csv_loader.py MOVIES \
+  --provision-username movies_app \
+  --provision-password '<password>' \
+  --lockdown-default-user
+```
+
+⚠️ Use `--lockdown-default-user` with care: if you lose the provisioned credentials you can lock yourself out.
+
+Note: In some deployments, running ACL commands requires an admin user. If needed, pass `--admin-username/--admin-password` so provisioning runs with admin privileges.
+
+You may also control the batch size used per loaded CSV file.
+```bash
+usage: falkordb_csv_loader.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD]
+                              [--provision-username PROVISION_USERNAME] [--provision-password PROVISION_PASSWORD]
+                              [--provision-key-pattern PROVISION_KEY_PATTERN] [--provision-commands {graph-only,all}]
+                              [--admin-username ADMIN_USERNAME] [--admin-password ADMIN_PASSWORD] [--lockdown-default-user]
+                              [--batch-size BATCH_SIZE] [--stats] [--csv-dir CSV_DIR] [--merge-mode] [--multi-graph]
                               graph_name
 
 Load CSV files into FalkorDB
 
-positional arguments:
-  graph_name            Target graph name in FalkorDB (used as prefix in multi-graph mode)
-
-options:
-  -h, --help            show this help message and exit
-  --host HOST           FalkorDB host
-  --port PORT           FalkorDB port
-  --username USERNAME   FalkorDB username (optional)
-  --password PASSWORD   FalkorDB password (optional)
-  --batch-size BATCH_SIZE
-                        Batch size for loading (default: 5000)
-  --stats               Show graph statistics after loading
-  --csv-dir CSV_DIR     Directory containing CSV files (default: csv_output)
-  --merge-mode          Use MERGE instead of CREATE for upsert behavior
-  --multi-graph         Enable multi-graph mode: load each tenant_* subfolder into a separate graph
-
+Run `python3 falkordb_csv_loader.py --help` for the full option list.
 ```
 
 ### Multi-Tenant Data Loading
@@ -266,6 +284,14 @@ If you extracted multi-tenant data (with `--tenant-mode` option), you can load e
 
 ```bash
 python3 falkordb_csv_loader.py MYAPP --multi-graph --port 6379
+```
+
+If you also want to provision a **shared** ACL user that can access all tenant graphs created by this run (default key pattern: `MYAPP_*`):
+
+```bash
+python3 falkordb_csv_loader.py MYAPP --multi-graph --port 6379 \
+  --provision-username myapp_app \
+  --provision-password '<password>'
 ```
 
 This will:

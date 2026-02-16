@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""
-FalkorDB CSV Loader
+"""FalkorDB CSV Loader
 
 Loads nodes and edges from CSV files in the 'csv_output' folder into FalkorDB.
 Uses the falkordb-py library with batch processing and proper error handling.
+
+Optional: can provision a Redis ACL user for accessing the migrated graph(s).
 """
 
 import os
@@ -11,12 +12,22 @@ import csv
 import argparse
 import sys
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from falkordb import FalkorDB
 
 
 class FalkorDBCSVLoader:
-    def __init__(self, host: str = "localhost", port: int = 6379, graph_name: str = "graph", csv_dir: str = "csv_output", username: str = None, password: str = None, merge_mode: bool = False, multi_graph_mode: bool = False):
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 6379,
+        graph_name: str = "graph",
+        csv_dir: str = "csv_output",
+        username: str = None,
+        password: str = None,
+        merge_mode: bool = False,
+        multi_graph_mode: bool = False,
+    ):
         """
         Initialize FalkorDB connection
         
@@ -761,6 +772,107 @@ class FalkorDBCSVLoader:
             print(f"❌ Error getting graph statistics: {e}")
     
 
+    def _default_acl_key_pattern(self) -> str:
+        """Compute a default Redis ACL key pattern that matches the migrated graph keyspace."""
+        # In single-graph mode the graph key is typically the graph name.
+        # In multi-graph mode this loader creates graphs like: {graph_name}_{tenant}
+        if self.multi_graph_mode:
+            return f"{self.graph_name}_*"
+        return f"{self.graph_name}*"
+
+    def provision_acl_user(
+        self,
+        provision_username: str,
+        provision_password: str,
+        commands_mode: str = "graph-only",
+        key_pattern: Optional[str] = None,
+        admin_username: Optional[str] = None,
+        admin_password: Optional[str] = None,
+        lockdown_default_user: bool = False,
+    ) -> None:
+        """Create or update a Redis ACL user for accessing the migrated graph(s).
+
+        This is idempotent and overwrites any existing user definition (via ACL SETUSER ... reset ...).
+
+        IMPORTANT: creating an ACL user does not block unauthenticated access unless the Redis
+        'default' user is disabled or requires a password.
+        """
+
+        if not provision_username:
+            raise ValueError("provision_username is required")
+        if provision_password is None:
+            raise ValueError("provision_password is required")
+
+        # Use separate admin connection if provided.
+        acl_db = self.db
+        if admin_username is not None or admin_password is not None:
+            if not admin_username or admin_password is None:
+                raise ValueError("Both admin_username and admin_password must be provided")
+            acl_db = FalkorDB(
+                host=self.host,
+                port=self.port,
+                username=admin_username,
+                password=admin_password,
+            )
+
+        raw_pattern = key_pattern.strip() if key_pattern else self._default_acl_key_pattern()
+        # Allow users to pass patterns with or without leading '~'.
+        if raw_pattern.startswith("~"):
+            raw_pattern = raw_pattern[1:]
+
+        if commands_mode not in ("graph-only", "all"):
+            raise ValueError("commands_mode must be either 'graph-only' or 'all'")
+
+        if commands_mode == "all":
+            command_tokens = ["+@all"]
+        else:
+            # Minimal set suitable for clients that talk to FalkorDB via Redis.
+            # +@connection covers AUTH/HELLO/PING and other connection-level commands.
+            command_tokens = [
+                "+@connection",
+                "+graph.query",
+                "+graph.ro_query",
+                "+graph.explain",
+                "+graph.profile",
+                "+graph.list",
+            ]
+
+        print(
+            "🔐 Provisioning FalkorDB ACL user for graph access "
+            f"(user='{provision_username}', key_pattern='~{raw_pattern}', permissions='{commands_mode}')..."
+        )
+
+        # Overwrite semantics: reset removes previous passwords/keys/commands.
+        setuser_args = [
+            "ACL",
+            "SETUSER",
+            provision_username,
+            "reset",
+            "on",
+            f">{provision_password}",
+            f"~{raw_pattern}",
+            *command_tokens,
+        ]
+
+        try:
+            acl_db.execute_command(*setuser_args)
+            # Validate existence (do not print secrets).
+            acl_db.execute_command("ACL", "GETUSER", provision_username)
+        except Exception as e:
+            raise RuntimeError(f"ACL provisioning failed: {e}")
+
+        if lockdown_default_user:
+            print(
+                "⚠️  Locking down Redis 'default' user (ACL SETUSER default off). "
+                "Make sure you keep the provisioned credentials safe."
+            )
+            try:
+                acl_db.execute_command("ACL", "SETUSER", "default", "off")
+            except Exception as e:
+                raise RuntimeError(f"Failed to disable Redis 'default' user: {e}")
+
+        print("✅ ACL user provisioned successfully")
+
     def close(self):
         """Close the database connection"""
         # FalkorDB doesn't require explicit closing
@@ -774,10 +886,10 @@ def main():
 Examples:
   # Load into a single graph
   python3 falkordb_csv_loader.py mygraph
-  
+
   # Load multi-tenant data into separate graphs
   python3 falkordb_csv_loader.py mygraph --multi-graph
-  
+
   # This will create graphs: mygraph_tenant1, mygraph_tenant2, etc.
 ''',
         formatter_class=argparse.RawDescriptionHelpFormatter
@@ -785,14 +897,50 @@ Examples:
     parser.add_argument('graph_name', help='Target graph name in FalkorDB (used as prefix in multi-graph mode)')
     parser.add_argument('--host', default='localhost', help='FalkorDB host')
     parser.add_argument('--port', type=int, default=6379, help='FalkorDB port')
-    parser.add_argument('--username', help='FalkorDB username (optional)')
-    parser.add_argument('--password', help='FalkorDB password (optional)')
+
+    # Connection credentials for the loader itself
+    parser.add_argument('--username', help='FalkorDB username used for loading (optional)')
+    parser.add_argument('--password', help='FalkorDB password used for loading (optional)')
+
+    # Optional: provision an ACL user for post-migration access
+    parser.add_argument('--provision-username', help='Create/update a Redis ACL user for accessing the migrated graph(s)')
+    parser.add_argument('--provision-password', help='Password for the provisioned ACL user')
+    parser.add_argument(
+        '--provision-key-pattern',
+        help=(
+            'Redis ACL key pattern to grant (with or without leading ~). '
+            'Default: {graph_name}* (single graph) or {graph_name}_* (multi-graph)'
+        ),
+    )
+    parser.add_argument(
+        '--provision-commands',
+        choices=['graph-only', 'all'],
+        default='graph-only',
+        help='ACL permissions mode (default: graph-only)',
+    )
+    parser.add_argument('--admin-username', help='Admin username to use for ACL provisioning (optional)')
+    parser.add_argument('--admin-password', help='Admin password to use for ACL provisioning (optional)')
+    parser.add_argument(
+        '--lockdown-default-user',
+        action='store_true',
+        help="Disable Redis 'default' user after provisioning (makes auth required; use with care)",
+    )
+
     parser.add_argument('--batch-size', type=int, default=5000, help='Batch size for loading (default: 5000)')
     parser.add_argument('--stats', action='store_true', help='Show graph statistics after loading')
     parser.add_argument('--csv-dir', default='csv_output', help='Directory containing CSV files (default: csv_output)')
     parser.add_argument('--merge-mode', action='store_true', help='Use MERGE instead of CREATE for upsert behavior')
     parser.add_argument('--multi-graph', action='store_true', help='Enable multi-graph mode: load each tenant_* subfolder into a separate graph')
+
     args = parser.parse_args()
+
+    # Validate provisioning arguments
+    if (args.provision_username and not args.provision_password) or (args.provision_password and not args.provision_username):
+        parser.error('--provision-username and --provision-password must be provided together')
+    if args.lockdown_default_user and not args.provision_username:
+        parser.error('--lockdown-default-user requires --provision-username/--provision-password')
+    if (args.admin_username and not args.admin_password) or (args.admin_password and not args.admin_username):
+        parser.error('--admin-username and --admin-password must be provided together')
     
     loader = FalkorDBCSVLoader(
         host=args.host,
@@ -802,21 +950,34 @@ Examples:
         username=args.username,
         password=args.password,
         merge_mode=args.merge_mode,
-        multi_graph_mode=args.multi_graph
+        multi_graph_mode=args.multi_graph,
     )
-    
+
     try:
         # Load everything (indexes, constraints, and data)
         loader.load_all_csvs(args.batch_size)
-        
+
+        # Optional: provision ACL user after successful load
+        if args.provision_username:
+            loader.provision_acl_user(
+                provision_username=args.provision_username,
+                provision_password=args.provision_password,
+                commands_mode=args.provision_commands,
+                key_pattern=args.provision_key_pattern,
+                admin_username=args.admin_username,
+                admin_password=args.admin_password,
+                lockdown_default_user=args.lockdown_default_user,
+            )
+
         if args.stats:
             loader.get_graph_stats()
             loader.verify_node_attributes("Person", 3)
-            
+
     except KeyboardInterrupt:
         print("\n❌ Loading interrupted by user")
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
+        sys.exit(1)
     finally:
         loader.close()
 
