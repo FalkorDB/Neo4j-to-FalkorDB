@@ -9,11 +9,14 @@ Optional: can provision a Redis ACL user for accessing the migrated graph(s).
 
 import os
 import csv
+import json
 import argparse
 import sys
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from falkordb import FalkorDB
+INT64_MIN = -(2 ** 63)
+INT64_MAX = (2 ** 63) - 1
 
 
 class FalkorDBCSVLoader:
@@ -46,6 +49,9 @@ class FalkorDBCSVLoader:
         self.csv_dir = csv_dir
         self.merge_mode = merge_mode
         self.multi_graph_mode = multi_graph_mode
+        self.node_type_schema = {}
+        self.relationship_type_schema = {}
+        self._load_type_schema()
         
         try:
             print(f"Connecting to FalkorDB at {host}:{port}...")
@@ -60,6 +66,123 @@ class FalkorDBCSVLoader:
         except Exception as e:
             print(f"❌ Failed to connect to FalkorDB: {e}")
             sys.exit(1)
+
+    def _schema_candidate_paths(self) -> List[str]:
+        """Return candidate locations for property type schema sidecar."""
+        normalized_csv_dir = os.path.normpath(self.csv_dir)
+        candidates = [os.path.join(normalized_csv_dir, 'property_types.json')]
+        parent_dir = os.path.dirname(normalized_csv_dir)
+        if parent_dir and parent_dir != normalized_csv_dir:
+            candidates.append(os.path.join(parent_dir, 'property_types.json'))
+        return candidates
+
+    def _load_type_schema(self):
+        """Load optional schema with declared property types per label/relationship."""
+        self.node_type_schema = {}
+        self.relationship_type_schema = {}
+
+        for schema_path in self._schema_candidate_paths():
+            if not os.path.exists(schema_path):
+                continue
+            try:
+                with open(schema_path, 'r', encoding='utf-8') as schema_file:
+                    schema_data = json.load(schema_file)
+
+                node_schema = schema_data.get('nodes', {})
+                relationship_schema = schema_data.get('relationships', {})
+
+                if isinstance(node_schema, dict):
+                    self.node_type_schema = {
+                        str(label): {
+                            str(prop): str(prop_type).lower()
+                            for prop, prop_type in props.items()
+                        }
+                        for label, props in node_schema.items()
+                        if isinstance(props, dict)
+                    }
+
+                if isinstance(relationship_schema, dict):
+                    self.relationship_type_schema = {
+                        str(rel_type): {
+                            str(prop): str(prop_type).lower()
+                            for prop, prop_type in props.items()
+                        }
+                        for rel_type, props in relationship_schema.items()
+                        if isinstance(props, dict)
+                    }
+
+                print(f"✅ Loaded property type schema from {schema_path}")
+                return
+            except Exception as e:
+                print(f"⚠️ Failed to load property type schema {schema_path}: {e}")
+
+    @staticmethod
+    def _is_integer_literal(value: str) -> bool:
+        if not isinstance(value, str) or not value:
+            return False
+        if value.startswith('-'):
+            return value[1:].isdigit()
+        return value.isdigit()
+
+    @staticmethod
+    def _is_float_literal(value: str) -> bool:
+        if not isinstance(value, str) or not value:
+            return False
+        return '.' in value and value.replace('.', '', 1).lstrip('-').isdigit()
+
+    @staticmethod
+    def _parse_int64(value: str) -> Optional[int]:
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return None
+        if parsed < INT64_MIN or parsed > INT64_MAX:
+            return None
+        return parsed
+
+    def _coerce_scalar(self, value: str, declared_type: Optional[str] = None) -> Any:
+        """Coerce CSV value using declared type when available, with safe fallback."""
+        if value is None or value == '':
+            return None
+
+        normalized_type = declared_type.lower() if isinstance(declared_type, str) else None
+
+        if normalized_type == 'string':
+            return value
+        if normalized_type == 'integer':
+            parsed = self._parse_int64(value)
+            return parsed if parsed is not None else value
+        if normalized_type == 'float':
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return value
+        if normalized_type == 'boolean':
+            lowered = value.lower()
+            if lowered in ('true', '1'):
+                return True
+            if lowered in ('false', '0'):
+                return False
+            return value
+
+        # Backward-compatible fallback when schema is unavailable.
+        if self._is_integer_literal(value):
+            parsed = self._parse_int64(value)
+            return parsed if parsed is not None else value
+        if self._is_float_literal(value):
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return value
+        return value
+
+    def _coerce_identifier(self, value: str) -> Any:
+        """Coerce IDs to int64 when safe; keep as string otherwise."""
+        if self._is_integer_literal(value):
+            parsed = self._parse_int64(value)
+            if parsed is not None:
+                return parsed
+        return value
     
     def read_csv_file(self, file_path: str) -> List[Dict[str, Any]]:
         """Read CSV file and return list of dictionaries"""
@@ -286,6 +409,7 @@ class FalkorDBCSVLoader:
         # Extract label from filename (preserve original case)
         filename = os.path.basename(file_path)
         raw_label = filename.replace('nodes_', '').replace('.csv', '')
+        node_property_types = self.node_type_schema.get(raw_label, {})
         # Sanitize label: replace colons and other invalid characters with underscores
         label = raw_label.replace(':', '_')
         
@@ -315,13 +439,8 @@ class FalkorDBCSVLoader:
                     if key not in ['id', 'labels']:
                         # Handle empty values gracefully
                         if value:
-                            # Try to convert to appropriate type
-                            if value.isdigit():
-                                properties[key] = int(value)
-                            elif value.replace('.', '', 1).lstrip('-').isdigit():
-                                properties[key] = float(value)
-                            else:
-                                properties[key] = value
+                            declared_type = node_property_types.get(key)
+                            properties[key] = self._coerce_scalar(value, declared_type)
                         else:
                             properties[key] = None
                 
@@ -335,11 +454,12 @@ class FalkorDBCSVLoader:
                         prop_parts.append(f"{k}: {repr(v)}")
                 prop_str = ', '.join(prop_parts)
                 
-                # Smart ID handling: quote if not a pure number
-                if node_id.isdigit():
-                    id_str = node_id  # Numeric ID, no quotes needed
+                # Smart ID handling with overflow-safe int64 conversion
+                node_id_value = self._coerce_identifier(node_id)
+                if isinstance(node_id_value, int):
+                    id_str = str(node_id_value)
                 else:
-                    id_str = f"'{node_id}'"  # String ID, needs quotes
+                    id_str = f"'{node_id_value}'"
                 
                 # Debug: show properties for first few records
                 if i == 0 and j < 3:
@@ -364,18 +484,11 @@ class FalkorDBCSVLoader:
                     
                     for key, value in row.items():
                         if key not in ['id', 'labels'] and value:
-                            if value.isdigit():
-                                properties[key] = int(value)
-                            elif value.replace('.', '', 1).lstrip('-').isdigit():
-                                properties[key] = float(value)
-                            else:
-                                properties[key] = value
+                            declared_type = node_property_types.get(key)
+                            properties[key] = self._coerce_scalar(value, declared_type)
                     
                     # Smart ID handling
-                    if node_id.isdigit():
-                        node_id_value = int(node_id)
-                    else:
-                        node_id_value = node_id
+                    node_id_value = self._coerce_identifier(node_id)
                     
                     batch_data.append({'id': node_id_value, 'props': properties})
                 
@@ -416,6 +529,7 @@ class FalkorDBCSVLoader:
         # Extract relationship type from filename (preserve original case)
         filename = os.path.basename(file_path)
         rel_type = filename.replace('edges_', '').replace('.csv', '')
+        relationship_property_types = self.relationship_type_schema.get(rel_type, {})
         
         rows = self.read_csv_file(file_path)
         if not rows:
@@ -453,20 +567,17 @@ class FalkorDBCSVLoader:
                             if len(parts) == 2 and parts[0] == parts[1]:
                                 clean_key = parts[0]
                         
-                        # Try to convert to appropriate type
-                        if value.isdigit():
-                            properties[clean_key] = int(value)
-                        elif value.replace('.', '', 1).isdigit():
-                            properties[clean_key] = float(value)
-                        else:
-                            properties[clean_key] = value
+                        declared_type = relationship_property_types.get(key) or relationship_property_types.get(clean_key)
+                        properties[clean_key] = self._coerce_scalar(value, declared_type)
                 
                 # Build property string
                 prop_str = ', '.join([f"{k}: {repr(v)}" for k, v in properties.items()])
                 
                 # Smart ID handling for both source and target
-                source_id_str = source_id if source_id.isdigit() else f"'{source_id}'"
-                target_id_str = target_id if target_id.isdigit() else f"'{target_id}'"
+                source_id_value = self._coerce_identifier(source_id)
+                target_id_value = self._coerce_identifier(target_id)
+                source_id_str = str(source_id_value) if isinstance(source_id_value, int) else f"'{source_id_value}'"
+                target_id_str = str(target_id_value) if isinstance(target_id_value, int) else f"'{target_id_value}'"
                 
                 # Build MATCH clause with labels if available
                 if source_label and target_label:
@@ -539,16 +650,12 @@ class FalkorDBCSVLoader:
                                 if len(parts) == 2 and parts[0] == parts[1]:
                                     clean_key = parts[0]
                             
-                            if value.isdigit():
-                                properties[clean_key] = int(value)
-                            elif value.replace('.', '', 1).isdigit():
-                                properties[clean_key] = float(value)
-                            else:
-                                properties[clean_key] = value
+                            declared_type = relationship_property_types.get(key) or relationship_property_types.get(clean_key)
+                            properties[clean_key] = self._coerce_scalar(value, declared_type)
                     
                     # Smart ID handling
-                    source_id_value = int(source_id) if source_id.isdigit() else source_id
-                    target_id_value = int(target_id) if target_id.isdigit() else target_id
+                    source_id_value = self._coerce_identifier(source_id)
+                    target_id_value = self._coerce_identifier(target_id)
                     
                     # Get first label for nodes
                     source_label_first = source_label.split(':')[0] if source_label and ':' in source_label else source_label

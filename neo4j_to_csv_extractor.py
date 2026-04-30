@@ -39,6 +39,8 @@ class Neo4jToCSVExtractor:
         self.tenant_mode = tenant_mode
         self.tenant_filter_key = tenant_filter_key
         self.tenants = []
+        self.node_property_types = defaultdict(dict)
+        self.relationship_property_types = defaultdict(dict)
         
         try:
             self.driver = GraphDatabase.driver(uri, auth=(username, password))
@@ -188,6 +190,58 @@ class Neo4jToCSVExtractor:
         """Close the database connection"""
         if self.driver:
             self.driver.close()
+
+    @staticmethod
+    def _infer_property_type(value: Any) -> Optional[str]:
+        """Infer the canonical property type from a Python value."""
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return 'boolean'
+        if isinstance(value, int):
+            return 'integer'
+        if isinstance(value, float):
+            return 'float'
+        return 'string'
+
+    @staticmethod
+    def _merge_property_types(existing: Optional[str], candidate: Optional[str]) -> Optional[str]:
+        """Merge observed types for a property into a single safe type."""
+        if not existing:
+            return candidate
+        if not candidate or existing == candidate:
+            return existing
+        if {existing, candidate} == {'integer', 'float'}:
+            return 'float'
+        return 'string'
+
+    def _record_property_type(self, property_type_map: Dict[str, str], property_name: str, value: Any):
+        """Record inferred property type for schema-driven loading."""
+        inferred_type = self._infer_property_type(value)
+        merged_type = self._merge_property_types(property_type_map.get(property_name), inferred_type)
+        if merged_type:
+            property_type_map[property_name] = merged_type
+
+    def write_type_schema(self) -> str:
+        """Write inferred property types to JSON sidecar file for the loader."""
+        schema_file = os.path.join(self.output_dir, "property_types.json")
+        schema = {
+            "format_version": 1,
+            "nodes": {
+                label: dict(sorted(props.items()))
+                for label, props in sorted(self.node_property_types.items())
+            },
+            "relationships": {
+                rel_type: dict(sorted(props.items()))
+                for rel_type, props in sorted(self.relationship_property_types.items())
+            }
+        }
+
+        with open(schema_file, 'w', encoding='utf-8') as f:
+            json.dump(schema, f, indent=2, ensure_ascii=False)
+
+        print(f"Generated property type schema: {schema_file}")
+        return schema_file
     
     def get_node_labels(self) -> List[str]:
         """Get all node labels in the database"""
@@ -600,6 +654,7 @@ class Neo4jToCSVExtractor:
                                 value = self._apply_transformation(value, transformation)
                                 if original_value != value:
                                     print(f"  🔄 Transformed {label}.{prop}: '{original_value}' -> '{value}'")
+                            self._record_property_type(self.node_property_types[label], mapped_prop, value)
                             
                             row[mapped_prop] = str(value) if value is not None else ''
                         
@@ -775,6 +830,7 @@ class Neo4jToCSVExtractor:
                             mapped_prop = self.config['relationship_property_mappings'].get(rel_type, {}).get(prop, prop)
                             
                             # Transform data if necessary (could add transformation for relationships too)
+                            self._record_property_type(self.relationship_property_types[rel_type], mapped_prop, value)
                             row[mapped_prop] = str(value) if value is not None else ''
                         
                         writer.writerow(row)
@@ -1040,6 +1096,7 @@ REMOVE r.source, r.target, r.type;
         # Generate scripts
         data_script_file = self.generate_falkordb_load_script(node_files, edge_files)
         index_script_file = self.generate_falkordb_index_script(index_file, constraint_file)
+        type_schema_file = self.write_type_schema()
         
         return {
             'nodes': node_files,
@@ -1047,7 +1104,8 @@ REMOVE r.source, r.target, r.type;
             'indexes': index_file,
             'constraints': constraint_file,
             'data_script': data_script_file,
-            'index_script': index_script_file
+            'index_script': index_script_file,
+            'type_schema': type_schema_file
         }
 
 
@@ -1116,9 +1174,17 @@ Examples:
         
         # Handle data extraction
         if args.nodes_only:
-            extractor.extract_all_nodes(args.batch_size)
+            node_files = extractor.extract_all_nodes(args.batch_size)
+            type_schema_file = extractor.write_type_schema()
+            print("\nNode extraction complete!")
+            print(f"Node files: {len(node_files)}")
+            print(f"Type schema file: {type_schema_file}")
         elif args.edges_only:
-            extractor.extract_all_relationships(args.batch_size)
+            edge_files = extractor.extract_all_relationships(args.batch_size)
+            type_schema_file = extractor.write_type_schema()
+            print("\nRelationship extraction complete!")
+            print(f"Edge files: {len(edge_files)}")
+            print(f"Type schema file: {type_schema_file}")
         elif args.indexes_only:
             index_file = extractor.extract_indexes_to_csv()
             constraint_file = extractor.extract_constraints_to_csv()
@@ -1136,6 +1202,7 @@ Examples:
             print(f"Constraint file: {result['constraints']}")
             print(f"Data load script: {result['data_script']}")
             print(f"Index creation script: {result['index_script']}")
+            print(f"Type schema file: {result['type_schema']}")
     
     finally:
         extractor.close()
