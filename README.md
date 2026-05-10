@@ -273,11 +273,26 @@ usage: falkordb_csv_loader.py [-h] [--host HOST] [--port PORT] [--username USERN
                               [--provision-key-pattern PROVISION_KEY_PATTERN] [--provision-commands {graph-only,all}]
                               [--admin-username ADMIN_USERNAME] [--admin-password ADMIN_PASSWORD] [--lockdown-default-user]
                               [--batch-size BATCH_SIZE] [--stats] [--csv-dir CSV_DIR] [--merge-mode] [--multi-graph]
+                              [--debug]
                               graph_name
 
 Load CSV files into FalkorDB
 
 Run `python3 falkordb_csv_loader.py --help` for the full option list.
+```
+
+### Debug logging
+
+Pass `--debug` to print a timestamped log line **before every query or command** sent to FalkorDB. This is useful for diagnosing slow or failing loads: you can see exactly which phase is hanging, which graph is targeted, the query preview, and — for batched loads — the batch size.
+
+```bash
+python3 falkordb_csv_loader.py MOVIES --port 6379 --debug
+```
+
+Sample debug output:
+```
+[2025-08-03 14:04:06] [DEBUG] schema:id-index:Movie: sending GRAPH.QUERY to 'MOVIES' and waiting for server response | query=CREATE INDEX ON :Movie(id)
+[2025-08-03 14:04:06] [DEBUG] nodes:batch:Movie: sending GRAPH.QUERY to 'MOVIES' and waiting for server response, params_keys=['batch'], batch_size=38 | query=UNWIND $batch AS row CREATE (n:Movie) SET n.id = row.id, n += row.props
 ```
 
 ### Multi-Tenant Data Loading
