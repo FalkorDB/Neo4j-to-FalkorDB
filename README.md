@@ -16,7 +16,17 @@ https://neo4j.com/docs/operations-manual/current/installation/
 You can load the movies dataset by following the ":guide movies" command in the neo4j browser.
 More details are available here: https://neo4j.com/docs/getting-started/appendix/example-data/
 
-## Step 3: Reviewing and updating mapping configuration file
+## Step 3: Installing/updating Python dependencies
+Load dependencies from `requirements.txt` before running the extractor/loader scripts:
+```bash
+python3 -m pip install -r requirements.txt
+```
+If dependencies were changed, update your environment with:
+```bash
+python3 -m pip install --upgrade -r requirements.txt
+```
+
+## Step 4: Reviewing and updating mapping configuration file
 The configuration file migrate_config.json allows you to modify how the labels and properties are represented in FalkorDB.
 In order to extract the ontology (for a dataset which is not the movies sample dataset),\
 you may generate a template config file using this command:
@@ -102,7 +112,7 @@ Connecting to Neo4j at bolt://localhost:7687 with username 'neo4j'...
 📋 Analysis complete! Use the generated template to customize your migration.
 ```
 --------
-## Step 4: Extracting data from neo4j and generating csv files
+## Step 5: Extracting data from neo4j and generating csv files
 To extract data from neo4j you can activate the relevant python script:
 ```bash
 python3 neo4j_to_csv_extractor.py --password <your-neo4j-password> --config migrate_config.json
@@ -228,7 +238,7 @@ Index creation script: csv_output/create_indexes_falkordb.cypher
 --------
 
 
-## Step 5: Loading csv data into falkordb
+## Step 6: Loading csv data into falkordb
 Setup falkordb on your local machine (you can either select the "server" option only, \
 or use standard deployment that includes the browser component:
 https://docs.falkordb.com/getting_started.html
@@ -477,7 +487,7 @@ Relationships:
 ```
 ---------
 
-## Step 6: Validating content of data in FalkorDB
+## Step 7: Validating content of data in FalkorDB
 
 Here is how the same cypher query is visualized in both Neo4j and FalkorDB broswers:
 ```cypher
