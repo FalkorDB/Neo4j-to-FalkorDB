@@ -26,7 +26,7 @@ If dependencies were changed, update your environment with:
 python3 -m pip install --upgrade -r requirements.txt
 ```
 
-## Step 4: Reviewing and updating mapping configuration file
+## Step 4: Reviewing and updating mapping configuration file (extract Ontology)
 The configuration file migrate_config.json allows you to modify how the labels and properties are represented in FalkorDB.
 In order to extract the ontology (for a dataset which is not the movies sample dataset),\
 you may generate a template config file using this command:
